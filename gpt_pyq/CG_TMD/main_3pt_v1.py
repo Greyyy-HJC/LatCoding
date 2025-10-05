@@ -224,6 +224,12 @@ sequential_bw_prop_down_pyq = contract(
                 phases_3pt_pyq, sequential_bw_prop_down, pyquda_gamma_ls
             )
 
+print(">>> DEBUG:")
+print(np.shape(sequential_bw_prop_down_pyq))
+
+# >>> DEBUG:
+# (1, 1, 16, 2, 32, 8, 8, 4, 4, 4, 3, 3)
+
 sequential_bw_prop_up_pyq = contract(
                 "qwtzyx, pwtzyxjicf, gim -> pqgwtzyxjmcf",
                 phases_3pt_pyq, sequential_bw_prop_up, pyquda_gamma_ls
