@@ -1,0 +1,378 @@
+MPI version is unknown - bad things may happen
+AcceleratorCudaInit[0]: ========================
+AcceleratorCudaInit[0]: Device Number    : 0
+AcceleratorCudaInit[0]: ========================
+AcceleratorCudaInit[0]: Device identifier: NVIDIA GeForce RTX 3060
+AcceleratorCudaInit[0]:   totalGlobalMem: 12626493440 
+AcceleratorCudaInit[0]:   managedMemory: 1 
+AcceleratorCudaInit[0]:   isMultiGpuBoard: 0 
+AcceleratorCudaInit[0]:   warpSize: 32 
+AcceleratorCudaInit[0]:   pciBusID: 7 
+AcceleratorCudaInit[0]:   pciDeviceID: 0 
+AcceleratorCudaInit[0]: maxGridSize (2147483647,65535,65535)
+AcceleratorCudaInit: using default device 
+AcceleratorCudaInit: assume user either uses
+AcceleratorCudaInit: a) IBM jsrun, or 
+AcceleratorCudaInit: b) invokes through a wrapping script to set CUDA_VISIBLE_DEVICES, UCX_NET_DEVICES, and numa binding 
+AcceleratorCudaInit: Configure options --enable-setdevice=no 
+local rank 0 device 0 bus id: 0000:07:00.0
+AcceleratorCudaInit: ================================================
+SharedMemoryMpi:  World communicator of size 1
+SharedMemoryMpi:  Node  communicator of size 1
+0SharedMemoryMpi:  SharedMemoryMPI.cc acceleratorAllocDevice 1073741824bytes at 0x7ca472000000 - 7ca4b1ffffff for comms buffers 
+Setting up IPC
+
+__|__|__|__|__|__|__|__|__|__|__|__|__|__|__
+__|__|__|__|__|__|__|__|__|__|__|__|__|__|__
+__|_ |  |  |  |  |  |  |  |  |  |  |  | _|__
+__|_                                    _|__
+__|_   GGGG    RRRR    III    DDDD      _|__
+__|_  G        R   R    I     D   D     _|__
+__|_  G        R   R    I     D    D    _|__
+__|_  G  GG    RRRR     I     D    D    _|__
+__|_  G   G    R  R     I     D   D     _|__
+__|_   GGGG    R   R   III    DDDD      _|__
+__|_                                    _|__
+__|__|__|__|__|__|__|__|__|__|__|__|__|__|__
+__|__|__|__|__|__|__|__|__|__|__|__|__|__|__
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |  
+
+
+Copyright (C) 2015 Peter Boyle, Azusa Yamaguchi, Guido Cossu, Antonin Portelli and other authors
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+Current Grid git commit hash=46c717e873bb91677e8961a6fc5bfc58bc2171a5: (HEAD -> gpt_proton, origin/gpt_proton) clean
+
+Grid : Message : ================================================ 
+Grid : Message : MPI is initialised and logging filters activated 
+Grid : Message : ================================================ 
+Grid : Message : This rank is running on host Moonway
+Grid : Message : Requested 1073741824 byte stencil comms buffers 
+Grid : Message : MemoryManager Cache 10101194752 bytes 
+Grid : Message : MemoryManager::Init() setting up
+Grid : Message : MemoryManager::Init() cache pool for recent host   allocations: SMALL 8 LARGE 2 HUGE 0
+Grid : Message : MemoryManager::Init() cache pool for recent device allocations: SMALL 16 LARGE 8 Huge 0
+Grid : Message : MemoryManager::Init() cache pool for recent shared allocations: SMALL 16 LARGE 8 Huge 0
+Grid : Message : MemoryManager::Init() Non unified: Caching accelerator data in dedicated memory
+Grid : Message : MemoryManager::Init() Using cudaMalloc
+
+=============================================
+              Initialized GPT                
+     Copyright (C) 2020 Christoph Lehner     
+=============================================
+Grid : Message : 1.395931 s :  Stencil object allocated for 262144 sites table 0x7ca3af200000 GridPtr 0x5fb3f5d0f500
+Grid : Message : 1.402910 s :  Stencil object allocated for 262144 sites table 0x7ca453000000 GridPtr 0x5fb3f5d0f500
+Grid : Message : 1.409909 s :  Stencil object allocated for 262144 sites table 0x7ca467000000 GridPtr 0x5fb3f5d0f500
+Grid : Message : 1.416954 s :  Stencil object allocated for 262144 sites table 0x7ca523200000 GridPtr 0x5fb3f5d0f500
+GPT :      36.906667 s : SU(2)-subgroup heatbath 0 has P = 1.0, R_2x1 = 1.0
+GPT :     171.965423 s : SU(2)-subgroup heatbath 1 has P = 0.6950559198612466, R_2x1 = 0.5326776811157937
+GPT :     224.258361 s : SU(2)-subgroup heatbath 2 has P = 0.6341519248156221, R_2x1 = 0.4451164454313853
+GPT :     276.120699 s : SU(2)-subgroup heatbath 3 has P = 0.6152041772514669, R_2x1 = 0.4173709657304473
+GPT :     328.572848 s : SU(2)-subgroup heatbath 4 has P = 0.6073197412635783, R_2x1 = 0.4054382627784369
+GPT :     381.340466 s : SU(2)-subgroup heatbath 5 has P = 0.6031457783618676, R_2x1 = 0.39905669733644855
+GPT :     454.700578 s : SU(2)-subgroup heatbath 6 has P = 0.6008256358476654, R_2x1 = 0.39532679501898105
+GPT :     510.128787 s : SU(2)-subgroup heatbath 7 has P = 0.5993078416461046, R_2x1 = 0.39300414334978295
+GPT :     562.372750 s : SU(2)-subgroup heatbath 8 has P = 0.5981751981819902, R_2x1 = 0.39121188726587475
+GPT :     615.533511 s : SU(2)-subgroup heatbath 9 has P = 0.5975658824677369, R_2x1 = 0.3900687669613956
+GPT :     667.385773 s : SU(2)-subgroup heatbath 10 has P = 0.597232572294484, R_2x1 = 0.38955931611787603
+GPT :     718.969751 s : SU(2)-subgroup heatbath 11 has P = 0.5967969393745501, R_2x1 = 0.38878129505224635
+GPT :     770.428875 s : SU(2)-subgroup heatbath 12 has P = 0.5963729336859055, R_2x1 = 0.3883180744985882
+GPT :     821.632512 s : SU(2)-subgroup heatbath 13 has P = 0.5958595995189256, R_2x1 = 0.387327271161129
+GPT :     872.884566 s : SU(2)-subgroup heatbath 14 has P = 0.595573412379004, R_2x1 = 0.3868759920650981
+GPT :     924.283413 s : SU(2)-subgroup heatbath 15 has P = 0.5955588248382647, R_2x1 = 0.38691542186245687
+GPT :     975.490011 s : SU(2)-subgroup heatbath 16 has P = 0.5954377953029765, R_2x1 = 0.38671927440205084
+GPT :    1026.743062 s : SU(2)-subgroup heatbath 17 has P = 0.5955188131075778, R_2x1 = 0.3867963574252151
+GPT :    1077.880779 s : SU(2)-subgroup heatbath 18 has P = 0.5955064403722552, R_2x1 = 0.3866994880390108
+GPT :    1129.915708 s : SU(2)-subgroup heatbath 19 has P = 0.5954331242239039, R_2x1 = 0.38652171023151416
+GPT :    1181.838218 s : SU(2)-subgroup heatbath 20 has P = 0.59526009381111, R_2x1 = 0.386379071008389
+GPT :    1233.514506 s : SU(2)-subgroup heatbath 21 has P = 0.5953004457274537, R_2x1 = 0.38622007796012375
+GPT :    1284.637264 s : SU(2)-subgroup heatbath 22 has P = 0.595069233111408, R_2x1 = 0.3860989076873183
+GPT :    1336.016877 s : SU(2)-subgroup heatbath 23 has P = 0.5948868497709113, R_2x1 = 0.3857250402330622
+GPT :    1387.549065 s : SU(2)-subgroup heatbath 24 has P = 0.5950449761244768, R_2x1 = 0.38603647949537495
+GPT :    1439.195345 s : SU(2)-subgroup heatbath 25 has P = 0.594866172561303, R_2x1 = 0.3857454998973665
+GPT :    1491.096319 s : SU(2)-subgroup heatbath 26 has P = 0.5950271470478331, R_2x1 = 0.3858262242286567
+GPT :    1542.288304 s : SU(2)-subgroup heatbath 27 has P = 0.5949839574210499, R_2x1 = 0.3857208383864694
+GPT :    1593.705852 s : SU(2)-subgroup heatbath 28 has P = 0.5948678467669818, R_2x1 = 0.3855110043862409
+GPT :    1644.887240 s : SU(2)-subgroup heatbath 29 has P = 0.5948821042064584, R_2x1 = 0.38566689756193695
+GPT :    1696.397710 s : SU(2)-subgroup heatbath 30 has P = 0.5947885223024354, R_2x1 = 0.38549205357908856
+GPT :    1747.392984 s : SU(2)-subgroup heatbath 31 has P = 0.594643984261813, R_2x1 = 0.3851964505719766
+GPT :    1798.671665 s : SU(2)-subgroup heatbath 32 has P = 0.5947014554994926, R_2x1 = 0.3853317125848411
+GPT :    1850.387710 s : SU(2)-subgroup heatbath 33 has P = 0.5947088612532616, R_2x1 = 0.38537384196959645
+GPT :    1901.567153 s : SU(2)-subgroup heatbath 34 has P = 0.5946929251940559, R_2x1 = 0.38533928906736814
+GPT :    1953.342168 s : SU(2)-subgroup heatbath 35 has P = 0.5945740258726843, R_2x1 = 0.3852720424625384
+GPT :    2005.054017 s : SU(2)-subgroup heatbath 36 has P = 0.5943618528010525, R_2x1 = 0.3849265118945282
+GPT :    2057.356725 s : SU(2)-subgroup heatbath 37 has P = 0.5945857343002662, R_2x1 = 0.38506702103045526
+GPT :    2108.859272 s : SU(2)-subgroup heatbath 38 has P = 0.5943958100657648, R_2x1 = 0.3847507014809493
+GPT :    2159.557240 s : SU(2)-subgroup heatbath 39 has P = 0.594289873329232, R_2x1 = 0.38464023242438566
+GPT :    2210.941729 s : SU(2)-subgroup heatbath 40 has P = 0.5944687149958805, R_2x1 = 0.3850061194742105
+GPT :    2262.698726 s : SU(2)-subgroup heatbath 41 has P = 0.5944415255822157, R_2x1 = 0.38488678424281025
+GPT :    2314.796929 s : SU(2)-subgroup heatbath 42 has P = 0.5946158476595141, R_2x1 = 0.38525902711367643
+GPT :    2368.286804 s : SU(2)-subgroup heatbath 43 has P = 0.5942751820360775, R_2x1 = 0.3846864760766056
+GPT :    2419.562841 s : SU(2)-subgroup heatbath 44 has P = 0.5945135529750912, R_2x1 = 0.3851260289178034
+GPT :    2471.007740 s : SU(2)-subgroup heatbath 45 has P = 0.5944370354848182, R_2x1 = 0.3848241165488793
+GPT :    2522.006767 s : SU(2)-subgroup heatbath 46 has P = 0.5943207887623974, R_2x1 = 0.38468202797028495
+GPT :    2573.036865 s : SU(2)-subgroup heatbath 47 has P = 0.5941370717571072, R_2x1 = 0.38436082694322166
+GPT :    2624.140531 s : SU(2)-subgroup heatbath 48 has P = 0.5941133686065635, R_2x1 = 0.3845432287765183
+GPT :    2675.253766 s : SU(2)-subgroup heatbath 49 has P = 0.5943389626727267, R_2x1 = 0.38470384232390126
+Grid : Message : 2727.524549 s : IOobject: C++ write I/O ../conf/S32T32/wilson_b6.balance : 603979776 bytes and offset 628
+Grid : Message : 2727.853042 s : IOobject:  write 603979776 bytes in 0.328495 s 1753.45135 MB/s 
+Grid : Message : 2727.853064 s : IOobject: endian and checksum overhead 0.108031 s
+Grid : Message : 2727.853072 s : writeLatticeObject: unvectorize overhead 0.426232 s
+Grid : Message : 2727.928519 s : Written NERSC Configuration on ../conf/S32T32/wilson_b6.balance checksum 91e0178 plaq 0.594134365
+GPT :    2728.110136 s : NERSC file format; reading ../conf/S32T32/wilson_b6.balance
+GPT :    2728.110157 s :    BEGIN_HEADER
+GPT :    2728.110165 s : 	HDR_VERSION = 1.0
+GPT :    2728.110173 s : 	DATATYPE = 4D_SU3_GAUGE_3x3
+GPT :    2728.110179 s : 	STORAGE_FORMAT =
+GPT :    2728.110185 s : 	DIMENSION_1 = 32
+GPT :    2728.110190 s : 	DIMENSION_2 = 32
+GPT :    2728.110195 s : 	DIMENSION_3 = 32
+GPT :    2728.110200 s : 	DIMENSION_4 = 32
+GPT :    2728.110205 s : 	LINK_TRACE = 8.486547949e-05
+GPT :    2728.110210 s : 	PLAQUETTE  = 0.5941343647
+GPT :    2728.110216 s : 	BOUNDARY_1 = PERIODIC
+GPT :    2728.110220 s : 	BOUNDARY_2 = PERIODIC
+GPT :    2728.110226 s : 	BOUNDARY_3 = PERIODIC
+GPT :    2728.110230 s : 	BOUNDARY_4 = PERIODIC
+GPT :    2728.110235 s : 	CHECKSUM =    91e0178
+GPT :    2728.110240 s : 	SCIDAC_CHECKSUMA =          0
+GPT :    2728.110245 s : 	SCIDAC_CHECKSUMB =          0
+GPT :    2728.110250 s : 	ENSEMBLE_ID = gpt
+GPT :    2728.110255 s : 	ENSEMBLE_LABEL =
+GPT :    2728.110260 s : 	SEQUENCE_NUMBER = 1
+GPT :    2728.110265 s : 	CREATOR = jinchen
+GPT :    2728.110270 s : 	CREATOR_HARDWARE = Moonway-x86_64-Linux-6.8.0-60-generic
+GPT :    2728.110275 s : 	CREATION_DATE = Wed Jun 18 15:20:09 2025 EDT
+GPT :    2728.110281 s : 	ARCHIVE_DATE = Wed Jun 18 15:20:09 2025 EDT
+GPT :    2728.110286 s : 	FLOATING_POINT = IEEE64BIG
+GPT :    2728.110291 s :    END_HEADER
+GPT :    2729.579786 s : Read 0.5625 GB at 0.382847 GB/s (0.563947 GB/s for distribution, 1.19221 GB/s for munged read, 19.1214 GB/s for checksum, 3.11538 GB/s for munging, 1 readers)
+GPT :    2729.832223 s : 0.0
+GPT :    2729.832318 s : NERSC file format; reading ../conf/S32T32/wilson_b6.balance
+GPT :    2729.832328 s :    BEGIN_HEADER
+GPT :    2729.832335 s : 	HDR_VERSION = 1.0
+GPT :    2729.832342 s : 	DATATYPE = 4D_SU3_GAUGE_3x3
+GPT :    2729.832348 s : 	STORAGE_FORMAT =
+GPT :    2729.832353 s : 	DIMENSION_1 = 32
+GPT :    2729.832359 s : 	DIMENSION_2 = 32
+GPT :    2729.832364 s : 	DIMENSION_3 = 32
+GPT :    2729.832370 s : 	DIMENSION_4 = 32
+GPT :    2729.832375 s : 	LINK_TRACE = 8.486547949e-05
+GPT :    2729.832380 s : 	PLAQUETTE  = 0.5941343647
+GPT :    2729.832385 s : 	BOUNDARY_1 = PERIODIC
+GPT :    2729.832391 s : 	BOUNDARY_2 = PERIODIC
+GPT :    2729.832396 s : 	BOUNDARY_3 = PERIODIC
+GPT :    2729.832401 s : 	BOUNDARY_4 = PERIODIC
+GPT :    2729.832415 s : 	CHECKSUM =    91e0178
+GPT :    2729.832419 s : 	SCIDAC_CHECKSUMA =          0
+GPT :    2729.832423 s : 	SCIDAC_CHECKSUMB =          0
+GPT :    2729.832427 s : 	ENSEMBLE_ID = gpt
+GPT :    2729.832432 s : 	ENSEMBLE_LABEL =
+GPT :    2729.832436 s : 	SEQUENCE_NUMBER = 1
+GPT :    2729.832440 s : 	CREATOR = jinchen
+GPT :    2729.832444 s : 	CREATOR_HARDWARE = Moonway-x86_64-Linux-6.8.0-60-generic
+GPT :    2729.832449 s : 	CREATION_DATE = Wed Jun 18 15:20:09 2025 EDT
+GPT :    2729.832454 s : 	ARCHIVE_DATE = Wed Jun 18 15:20:09 2025 EDT
+GPT :    2729.832458 s : 	FLOATING_POINT = IEEE64BIG
+GPT :    2729.832462 s :    END_HEADER
+GPT :    2731.246331 s : Read 0.5625 GB at 0.397995 GB/s (0.58857 GB/s for distribution, 1.22918 GB/s for munged read, 24.6394 GB/s for checksum, 3.38187 GB/s for munging, 1 readers)
+GPT :    2732.437478 s : SU(2)-subgroup heatbath 0 has P = 0.5941343647153864, R_2x1 = 0.38448953052795676
+GPT :    2783.243408 s : SU(2)-subgroup heatbath 1 has P = 0.5942534716710517, R_2x1 = 0.38455627804577214
+GPT :    2834.152848 s : SU(2)-subgroup heatbath 2 has P = 0.5941788360092985, R_2x1 = 0.3846014179971298
+GPT :    2885.535763 s : SU(2)-subgroup heatbath 3 has P = 0.5940876753721559, R_2x1 = 0.38447117702618894
+GPT :    2937.064129 s : SU(2)-subgroup heatbath 4 has P = 0.5941604505621899, R_2x1 = 0.384565958454155
+GPT :    2988.656389 s : SU(2)-subgroup heatbath 5 has P = 0.5943279183552851, R_2x1 = 0.3847161388478409
+GPT :    3040.380195 s : SU(2)-subgroup heatbath 6 has P = 0.5940969416665863, R_2x1 = 0.3843999006602781
+GPT :    3091.575983 s : SU(2)-subgroup heatbath 7 has P = 0.5943464406234675, R_2x1 = 0.38469423166531913
+GPT :    3143.601627 s : SU(2)-subgroup heatbath 8 has P = 0.5939539448814354, R_2x1 = 0.38415938970812663
+GPT :    3195.891522 s : SU(2)-subgroup heatbath 9 has P = 0.5940335901356022, R_2x1 = 0.38439498588921206
+GPT :    3247.928610 s : SU(2)-subgroup heatbath 10 has P = 0.5943792464526985, R_2x1 = 0.3847351042134383
+GPT :    3300.102620 s : SU(2)-subgroup heatbath 11 has P = 0.5943945191456612, R_2x1 = 0.3848317415470037
+GPT :    3351.638533 s : SU(2)-subgroup heatbath 12 has P = 0.5941479163984498, R_2x1 = 0.38444675965138553
+GPT :    3403.253040 s : SU(2)-subgroup heatbath 13 has P = 0.5942151408412253, R_2x1 = 0.3846078572826518
+GPT :    3454.745445 s : SU(2)-subgroup heatbath 14 has P = 0.5942600606602559, R_2x1 = 0.3845937798377238
+GPT :    3506.618414 s : SU(2)-subgroup heatbath 15 has P = 0.594311185245392, R_2x1 = 0.3846655020499543
+GPT :    3558.316648 s : SU(2)-subgroup heatbath 16 has P = 0.5941534876066277, R_2x1 = 0.3845248443968306
+GPT :    3609.692898 s : SU(2)-subgroup heatbath 17 has P = 0.5944098318413775, R_2x1 = 0.3849407658590518
+GPT :    3660.867188 s : SU(2)-subgroup heatbath 18 has P = 0.5944412380357808, R_2x1 = 0.38485846450439143
+GPT :    3712.091489 s : SU(2)-subgroup heatbath 19 has P = 0.5943316359838681, R_2x1 = 0.384732640162488
+GPT :    3763.467089 s : SU(2)-subgroup heatbath 20 has P = 0.5942175126656607, R_2x1 = 0.38440822719104634
+GPT :    3815.360777 s : SU(2)-subgroup heatbath 21 has P = 0.5943186676403153, R_2x1 = 0.384645860523659
+GPT :    3867.409232 s : SU(2)-subgroup heatbath 22 has P = 0.5942671744358705, R_2x1 = 0.3844731188330351
+GPT :    3918.909807 s : SU(2)-subgroup heatbath 23 has P = 0.594256985059795, R_2x1 = 0.3845108793677973
+GPT :    3970.301736 s : SU(2)-subgroup heatbath 24 has P = 0.5941601892449248, R_2x1 = 0.38434605726577253
+GPT :    4022.308007 s : SU(2)-subgroup heatbath 25 has P = 0.5941625853661738, R_2x1 = 0.3844853483213278
+GPT :    4073.688157 s : SU(2)-subgroup heatbath 26 has P = 0.5943881046453291, R_2x1 = 0.38484434652097055
+GPT :    4125.190478 s : SU(2)-subgroup heatbath 27 has P = 0.5944060094650917, R_2x1 = 0.38489452247902906
+GPT :    4176.537268 s : SU(2)-subgroup heatbath 28 has P = 0.5944408141505398, R_2x1 = 0.38486086675446834
+GPT :    4228.514669 s : SU(2)-subgroup heatbath 29 has P = 0.5942570404549689, R_2x1 = 0.3846060666930012
+GPT :    4281.096332 s : SU(2)-subgroup heatbath 30 has P = 0.5941744695953275, R_2x1 = 0.3844040245059839
+GPT :    4332.982600 s : SU(2)-subgroup heatbath 31 has P = 0.5943273815015153, R_2x1 = 0.3844778001313612
+GPT :    4384.723948 s : SU(2)-subgroup heatbath 32 has P = 0.5942392969679405, R_2x1 = 0.3844457825335523
+GPT :    4436.253875 s : SU(2)-subgroup heatbath 33 has P = 0.5941535764541757, R_2x1 = 0.3844020601751668
+GPT :    4487.587158 s : SU(2)-subgroup heatbath 34 has P = 0.5940529538391838, R_2x1 = 0.384297779895904
+GPT :    4538.933256 s : SU(2)-subgroup heatbath 35 has P = 0.5942959222354524, R_2x1 = 0.3844812368868823
+GPT :    4590.415572 s : SU(2)-subgroup heatbath 36 has P = 0.5939847788963719, R_2x1 = 0.38426978267901163
+GPT :    4642.018044 s : SU(2)-subgroup heatbath 37 has P = 0.5941921799031051, R_2x1 = 0.38436460900385844
+GPT :    4693.448580 s : SU(2)-subgroup heatbath 38 has P = 0.5942537737104245, R_2x1 = 0.3846079648743075
+GPT :    4745.478113 s : SU(2)-subgroup heatbath 39 has P = 0.5940403373653859, R_2x1 = 0.384355235312918
+Grid : Message : 4797.365696 s : IOobject: C++ write I/O ../conf/S32T32/wilson_b6.0 : 603979776 bytes and offset 629
+Grid : Message : 4797.688305 s : IOobject:  write 603979776 bytes in 0.322611 s 1785.43199 MB/s 
+Grid : Message : 4797.688327 s : IOobject: endian and checksum overhead 0.091912 s
+Grid : Message : 4797.688335 s : writeLatticeObject: unvectorize overhead 0.420047 s
+Grid : Message : 4797.761151 s : Written NERSC Configuration on ../conf/S32T32/wilson_b6.0 checksum 635fc5fd plaq 0.594338839
+GPT :    4798.903944 s : SU(2)-subgroup heatbath 40 has P = 0.5943388392869394, R_2x1 = 0.38456791659616946
+GPT :    4850.420252 s : SU(2)-subgroup heatbath 41 has P = 0.5942452703302352, R_2x1 = 0.3844474670535947
+GPT :    4902.224904 s : SU(2)-subgroup heatbath 42 has P = 0.5940803512830397, R_2x1 = 0.38435364290787805
+GPT :    4954.038952 s : SU(2)-subgroup heatbath 43 has P = 0.5942566583880348, R_2x1 = 0.3843940500010497
+GPT :    5006.211030 s : SU(2)-subgroup heatbath 44 has P = 0.5941984103632204, R_2x1 = 0.38447465565596894
+GPT :    5058.200390 s : SU(2)-subgroup heatbath 45 has P = 0.5940649410267204, R_2x1 = 0.3841561459325427
+GPT :    5110.279357 s : SU(2)-subgroup heatbath 46 has P = 0.5940608772941357, R_2x1 = 0.38436605160584925
+GPT :    5162.413874 s : SU(2)-subgroup heatbath 47 has P = 0.5940095986893478, R_2x1 = 0.3842753037365083
+GPT :    5214.856171 s : SU(2)-subgroup heatbath 48 has P = 0.5940787525311515, R_2x1 = 0.3842781626031519
+GPT :    5266.946604 s : SU(2)-subgroup heatbath 49 has P = 0.594130814874115, R_2x1 = 0.3843629408905625
+GPT :    5318.620208 s : SU(2)-subgroup heatbath 50 has P = 0.5940871063114811, R_2x1 = 0.3842708400355829
+GPT :    5370.697744 s : SU(2)-subgroup heatbath 51 has P = 0.5940929007929233, R_2x1 = 0.38444240682998526
+GPT :    5422.132490 s : SU(2)-subgroup heatbath 52 has P = 0.5942367506905487, R_2x1 = 0.3845345469739027
+GPT :    5473.847425 s : SU(2)-subgroup heatbath 53 has P = 0.5941740983379912, R_2x1 = 0.38450768012923986
+GPT :    5525.570281 s : SU(2)-subgroup heatbath 54 has P = 0.5942147309537287, R_2x1 = 0.3843910758602243
+GPT :    5577.485715 s : SU(2)-subgroup heatbath 55 has P = 0.5941238924017033, R_2x1 = 0.38435173591722943
+GPT :    5629.488110 s : SU(2)-subgroup heatbath 56 has P = 0.5942448758520203, R_2x1 = 0.38452142625336644
+GPT :    5681.174279 s : SU(2)-subgroup heatbath 57 has P = 0.5940671958067459, R_2x1 = 0.3842048992589709
+GPT :    5732.856333 s : SU(2)-subgroup heatbath 58 has P = 0.5940155696974656, R_2x1 = 0.38420411943056704
+GPT :    5784.443141 s : SU(2)-subgroup heatbath 59 has P = 0.5940650980554223, R_2x1 = 0.38430612465787817
+GPT :    5835.920653 s : SU(2)-subgroup heatbath 60 has P = 0.5940247192501545, R_2x1 = 0.3842280145001075
+GPT :    5887.744601 s : SU(2)-subgroup heatbath 61 has P = 0.5941327061837587, R_2x1 = 0.3843753213618635
+GPT :    5939.809208 s : SU(2)-subgroup heatbath 62 has P = 0.5939772704041781, R_2x1 = 0.3842921369177113
+GPT :    5991.609043 s : SU(2)-subgroup heatbath 63 has P = 0.5941753686471394, R_2x1 = 0.3844415043158593
+GPT :    6043.296213 s : SU(2)-subgroup heatbath 64 has P = 0.5942015531893464, R_2x1 = 0.3843293210679246
+GPT :    6094.934698 s : SU(2)-subgroup heatbath 65 has P = 0.5940218555243636, R_2x1 = 0.38425699051997625
+GPT :    6146.642206 s : SU(2)-subgroup heatbath 66 has P = 0.5938873460782583, R_2x1 = 0.38407360573688726
+GPT :    6198.322147 s : SU(2)-subgroup heatbath 67 has P = 0.5939244677435761, R_2x1 = 0.3841137331315893
+GPT :    6249.757528 s : SU(2)-subgroup heatbath 68 has P = 0.5939366120384635, R_2x1 = 0.3843069307671008
+GPT :    6301.560218 s : SU(2)-subgroup heatbath 69 has P = 0.5940001379154197, R_2x1 = 0.3840191433600338
+GPT :    6353.257571 s : SU(2)-subgroup heatbath 70 has P = 0.5938504337401963, R_2x1 = 0.3841175437271468
+GPT :    6405.020217 s : SU(2)-subgroup heatbath 71 has P = 0.5938477680016228, R_2x1 = 0.3839383815829654
+GPT :    6456.396383 s : SU(2)-subgroup heatbath 72 has P = 0.5940284999856773, R_2x1 = 0.38415053796432796
+GPT :    6508.313976 s : SU(2)-subgroup heatbath 73 has P = 0.5940235704893654, R_2x1 = 0.3839892373089733
+GPT :    6560.255186 s : SU(2)-subgroup heatbath 74 has P = 0.5941530551490286, R_2x1 = 0.38432195951463416
+GPT :    6611.951958 s : SU(2)-subgroup heatbath 75 has P = 0.5940237970369627, R_2x1 = 0.38420304719614634
+GPT :    6663.816690 s : SU(2)-subgroup heatbath 76 has P = 0.5939586318219247, R_2x1 = 0.38422840427924476
+GPT :    6715.755992 s : SU(2)-subgroup heatbath 77 has P = 0.5938678958875122, R_2x1 = 0.38406658237120905
+GPT :    6767.589481 s : SU(2)-subgroup heatbath 78 has P = 0.5939902600819975, R_2x1 = 0.3840582471575864
+GPT :    6819.490523 s : SU(2)-subgroup heatbath 79 has P = 0.5938940316009165, R_2x1 = 0.38403123883639184
+Grid : Message : 6871.487296 s : IOobject: C++ write I/O ../conf/S32T32/wilson_b6.1 : 603979776 bytes and offset 629
+Grid : Message : 6871.808063 s : IOobject:  write 603979776 bytes in 0.320770 s 1795.67915 MB/s 
+Grid : Message : 6871.808085 s : IOobject: endian and checksum overhead 0.092854 s
+Grid : Message : 6871.808093 s : writeLatticeObject: unvectorize overhead 0.421322 s
+Grid : Message : 6871.885115 s : Written NERSC Configuration on ../conf/S32T32/wilson_b6.1 checksum 141080f0 plaq 0.593951272
+GPT :    6873.034776 s : SU(2)-subgroup heatbath 80 has P = 0.593951272422434, R_2x1 = 0.3840074694066043
+GPT :    6924.280680 s : SU(2)-subgroup heatbath 81 has P = 0.5940339068004409, R_2x1 = 0.38421050191372064
+GPT :    6975.742710 s : SU(2)-subgroup heatbath 82 has P = 0.5939912274391977, R_2x1 = 0.3840136967787523
+GPT :    7027.555931 s : SU(2)-subgroup heatbath 83 has P = 0.5938852378168132, R_2x1 = 0.38394385889049654
+GPT :    7079.150044 s : SU(2)-subgroup heatbath 84 has P = 0.5937571727459178, R_2x1 = 0.38378458702467116
+GPT :    7130.723530 s : SU(2)-subgroup heatbath 85 has P = 0.5937324463972867, R_2x1 = 0.3837714342475462
+GPT :    7182.329308 s : SU(2)-subgroup heatbath 86 has P = 0.5940058209054009, R_2x1 = 0.38406855274761315
+GPT :    7233.674798 s : SU(2)-subgroup heatbath 87 has P = 0.5939511753825671, R_2x1 = 0.38402561533410956
+GPT :    7285.109761 s : SU(2)-subgroup heatbath 88 has P = 0.5939812632471874, R_2x1 = 0.38415672905677317
+GPT :    7336.758822 s : SU(2)-subgroup heatbath 89 has P = 0.5940314025116151, R_2x1 = 0.3840992268437541
+GPT :    7388.946363 s : SU(2)-subgroup heatbath 90 has P = 0.5940726181768305, R_2x1 = 0.38428188772246175
+GPT :    7440.918227 s : SU(2)-subgroup heatbath 91 has P = 0.5940755370049908, R_2x1 = 0.3842869320404567
+GPT :    7492.460475 s : SU(2)-subgroup heatbath 92 has P = 0.5938934843500636, R_2x1 = 0.3838082881586514
+GPT :    7543.641549 s : SU(2)-subgroup heatbath 93 has P = 0.5940102601924125, R_2x1 = 0.3843250868057169
+GPT :    7595.570267 s : SU(2)-subgroup heatbath 94 has P = 0.594116816041705, R_2x1 = 0.38427062493958897
+GPT :    7647.532421 s : SU(2)-subgroup heatbath 95 has P = 0.5941902162196656, R_2x1 = 0.38439537747362323
+GPT :    7699.327415 s : SU(2)-subgroup heatbath 96 has P = 0.5941159880507109, R_2x1 = 0.38434781121997863
+GPT :    7750.590049 s : SU(2)-subgroup heatbath 97 has P = 0.594273556922956, R_2x1 = 0.3845812546157219
+GPT :    7801.949807 s : SU(2)-subgroup heatbath 98 has P = 0.594140629942768, R_2x1 = 0.3843291454458171
+GPT :    7853.279889 s : SU(2)-subgroup heatbath 99 has P = 0.5939103051743727, R_2x1 = 0.3839401083448419
+GPT :    7905.244385 s : SU(2)-subgroup heatbath 100 has P = 0.5939156053258109, R_2x1 = 0.3839055875861846
+GPT :    7957.226959 s : SU(2)-subgroup heatbath 101 has P = 0.5939630635892664, R_2x1 = 0.38392841452911053
+GPT :    8008.902067 s : SU(2)-subgroup heatbath 102 has P = 0.5938846667983325, R_2x1 = 0.3840486188173089
+GPT :    8060.328463 s : SU(2)-subgroup heatbath 103 has P = 0.5938610469717621, R_2x1 = 0.38400719405527484
+GPT :    8112.238372 s : SU(2)-subgroup heatbath 104 has P = 0.5939177454677745, R_2x1 = 0.38404114292324104
+GPT :    8164.133465 s : SU(2)-subgroup heatbath 105 has P = 0.594056787896858, R_2x1 = 0.3843824431633945
+GPT :    8215.727181 s : SU(2)-subgroup heatbath 106 has P = 0.593975423959885, R_2x1 = 0.38412872490420197
+GPT :    8267.411425 s : SU(2)-subgroup heatbath 107 has P = 0.5941893198016565, R_2x1 = 0.38438942163411777
+GPT :    8318.298229 s : SU(2)-subgroup heatbath 108 has P = 0.5942353325423765, R_2x1 = 0.3844502212299182
+GPT :    8369.828203 s : SU(2)-subgroup heatbath 109 has P = 0.5939707427763503, R_2x1 = 0.38405227212910625
+GPT :    8421.767076 s : SU(2)-subgroup heatbath 110 has P = 0.594085920317451, R_2x1 = 0.38428821493862075
+GPT :    8473.581048 s : SU(2)-subgroup heatbath 111 has P = 0.593930025866744, R_2x1 = 0.3841002680816813
+GPT :    8524.901070 s : SU(2)-subgroup heatbath 112 has P = 0.5940326997318613, R_2x1 = 0.3841672125705453
+GPT :    8576.785045 s : SU(2)-subgroup heatbath 113 has P = 0.5942176701356129, R_2x1 = 0.3844272648990911
+GPT :    8628.073813 s : SU(2)-subgroup heatbath 114 has P = 0.594005064767075, R_2x1 = 0.3842306533822141
+GPT :    8679.382588 s : SU(2)-subgroup heatbath 115 has P = 0.5941182850650523, R_2x1 = 0.38412197767206013
+GPT :    8730.757709 s : SU(2)-subgroup heatbath 116 has P = 0.5939221867152324, R_2x1 = 0.3841442323867329
+GPT :    8782.217078 s : SU(2)-subgroup heatbath 117 has P = 0.5938803086606935, R_2x1 = 0.3839840467572045
+GPT :    8833.757994 s : SU(2)-subgroup heatbath 118 has P = 0.5937037816371212, R_2x1 = 0.3835255762417152
+GPT :    8885.238243 s : SU(2)-subgroup heatbath 119 has P = 0.5938360172393968, R_2x1 = 0.38388695878493884
+Grid : Message : 8936.599534 s : IOobject: C++ write I/O ../conf/S32T32/wilson_b6.2 : 603979776 bytes and offset 629
+Grid : Message : 8936.935133 s : IOobject:  write 603979776 bytes in 0.335600 s 1716.32896 MB/s 
+Grid : Message : 8936.935157 s : IOobject: endian and checksum overhead 0.104001 s
+Grid : Message : 8936.935165 s : writeLatticeObject: unvectorize overhead 0.423297 s
+Grid : Message : 8937.410100 s : Written NERSC Configuration on ../conf/S32T32/wilson_b6.2 checksum 4bb5cbef plaq 0.593948819
+GPT :    8938.143034 s : SU(2)-subgroup heatbath 120 has P = 0.5939488191379384, R_2x1 = 0.38401956784382923
+GPT :    8990.332851 s : SU(2)-subgroup heatbath 121 has P = 0.5938278337278954, R_2x1 = 0.3838798057288672
+GPT :    9042.216040 s : SU(2)-subgroup heatbath 122 has P = 0.5939350005686228, R_2x1 = 0.38389793938660893
+GPT :    9094.794031 s : SU(2)-subgroup heatbath 123 has P = 0.5938892435805921, R_2x1 = 0.3840976565083341
+GPT :    9147.327325 s : SU(2)-subgroup heatbath 124 has P = 0.5938382351515287, R_2x1 = 0.38399121833492816
+GPT :    9198.637324 s : SU(2)-subgroup heatbath 125 has P = 0.5938657721981588, R_2x1 = 0.3840401990104517
+GPT :    9250.436689 s : SU(2)-subgroup heatbath 126 has P = 0.5937031293307885, R_2x1 = 0.3836701106266697
+GPT :    9301.592331 s : SU(2)-subgroup heatbath 127 has P = 0.5936763648409903, R_2x1 = 0.3836719095659938
+GPT :    9353.190909 s : SU(2)-subgroup heatbath 128 has P = 0.593768388563647, R_2x1 = 0.3839134870118209
+GPT :    9404.450486 s : SU(2)-subgroup heatbath 129 has P = 0.5939916089014455, R_2x1 = 0.38409972265227227
+GPT :    9456.635196 s : SU(2)-subgroup heatbath 130 has P = 0.5938807863612662, R_2x1 = 0.38378307305883036
+GPT :    9508.567496 s : SU(2)-subgroup heatbath 131 has P = 0.5938538679400945, R_2x1 = 0.38388552309060764
+GPT :    9560.146245 s : SU(2)-subgroup heatbath 132 has P = 0.5938476266066408, R_2x1 = 0.3839819529653115
+GPT :    9611.750116 s : SU(2)-subgroup heatbath 133 has P = 0.5938357033837182, R_2x1 = 0.3839362532422619
+GPT :    9663.100267 s : SU(2)-subgroup heatbath 134 has P = 0.593745496664344, R_2x1 = 0.38370727124146586
+GPT :    9714.475298 s : SU(2)-subgroup heatbath 135 has P = 0.5938470647711129, R_2x1 = 0.38397443877558785
+GPT :    9765.745911 s : SU(2)-subgroup heatbath 136 has P = 0.5939668745687836, R_2x1 = 0.3840377965744023
+GPT :    9817.979937 s : SU(2)-subgroup heatbath 137 has P = 0.594149516982047, R_2x1 = 0.3841766790410412
+GPT :    9869.933466 s : SU(2)-subgroup heatbath 138 has P = 0.5941489566072009, R_2x1 = 0.38414437328129486
+GPT :    9920.997789 s : SU(2)-subgroup heatbath 139 has P = 0.5940151379404155, R_2x1 = 0.3842636291840373
+GPT :    9972.831285 s : SU(2)-subgroup heatbath 140 has P = 0.5940289000460929, R_2x1 = 0.3840508164061261
+GPT :   10024.853745 s : SU(2)-subgroup heatbath 141 has P = 0.5940269865468976, R_2x1 = 0.38408619277606376
+GPT :   10076.249333 s : SU(2)-subgroup heatbath 142 has P = 0.5938947271235119, R_2x1 = 0.38379218248927693
+GPT :   10127.672853 s : SU(2)-subgroup heatbath 143 has P = 0.5937767346838846, R_2x1 = 0.38380371033430777
+GPT :   10178.715090 s : SU(2)-subgroup heatbath 144 has P = 0.593876103530438, R_2x1 = 0.38395128156040265
+GPT :   10230.804153 s : SU(2)-subgroup heatbath 145 has P = 0.593802773701347, R_2x1 = 0.38386601585529295
+GPT :   10281.839422 s : SU(2)-subgroup heatbath 146 has P = 0.5937265973061893, R_2x1 = 0.3837039744674473
+GPT :   10333.611947 s : SU(2)-subgroup heatbath 147 has P = 0.5940267999721006, R_2x1 = 0.38405233649938236
+GPT :   10384.798422 s : SU(2)-subgroup heatbath 148 has P = 0.5939377851922162, R_2x1 = 0.38380690887302954
+GPT :   10436.426325 s : SU(2)-subgroup heatbath 149 has P = 0.593803583153861, R_2x1 = 0.38384199356178605
+GPT :   10488.300380 s : SU(2)-subgroup heatbath 150 has P = 0.5937551522389765, R_2x1 = 0.3839188233630075
+GPT :   10539.393781 s : SU(2)-subgroup heatbath 151 has P = 0.5937060030057392, R_2x1 = 0.38376301973432747
+GPT :   10590.577131 s : SU(2)-subgroup heatbath 152 has P = 0.5937396691314419, R_2x1 = 0.38389469425685796
+GPT :   10641.721008 s : SU(2)-subgroup heatbath 153 has P = 0.5939728237284451, R_2x1 = 0.38403488922835616
+GPT :   10693.436596 s : SU(2)-subgroup heatbath 154 has P = 0.5938880245851043, R_2x1 = 0.38401250776190227
+GPT :   10744.903527 s : SU(2)-subgroup heatbath 155 has P = 0.5938811250237895, R_2x1 = 0.38413748163892214
+GPT :   10795.973107 s : SU(2)-subgroup heatbath 156 has P = 0.593965383190808, R_2x1 = 0.38410426530003927
+GPT :   10847.129341 s : SU(2)-subgroup heatbath 157 has P = 0.5938693579129559, R_2x1 = 0.38396493943541227
+GPT :   10898.592491 s : SU(2)-subgroup heatbath 158 has P = 0.5937781860193321, R_2x1 = 0.38383323381134615
+GPT :   10950.378507 s : SU(2)-subgroup heatbath 159 has P = 0.5939295860155603, R_2x1 = 0.3840110622047305
+Grid : Message : 11002.128535 s : IOobject: C++ write I/O ../conf/S32T32/wilson_b6.3 : 603979776 bytes and offset 629
+Grid : Message : 11002.445094 s : IOobject:  write 603979776 bytes in 0.316561 s 1819.55453 MB/s 
+Grid : Message : 11002.445118 s : IOobject: endian and checksum overhead 0.111204 s
+Grid : Message : 11002.445126 s : writeLatticeObject: unvectorize overhead 0.420446 s
+Grid : Message : 11002.514794 s : Written NERSC Configuration on ../conf/S32T32/wilson_b6.3 checksum de4e8e78 plaq 0.593781638
+GPT :   11003.659158 s : SU(2)-subgroup heatbath 160 has P = 0.593781638215615, R_2x1 = 0.38385157216899973
+GPT :   11055.254951 s : SU(2)-subgroup heatbath 161 has P = 0.5940808672078902, R_2x1 = 0.38439282117288825
+GPT :   11107.623473 s : SU(2)-subgroup heatbath 162 has P = 0.5939361080635742, R_2x1 = 0.384028719037629
+GPT :   11159.515686 s : SU(2)-subgroup heatbath 163 has P = 0.593992775277537, R_2x1 = 0.38424573480586194
+GPT :   11211.169555 s : SU(2)-subgroup heatbath 164 has P = 0.5938464072543466, R_2x1 = 0.38393002254634684
+GPT :   11262.737861 s : SU(2)-subgroup heatbath 165 has P = 0.5939105807829116, R_2x1 = 0.383915695951
+=============================================
+               Finalized GPT                 
+=============================================
+Grid : Message : 11296.719640 s : *******************************************
+Grid : Message : 11296.719790 s : ******* Grid Finalize                ******
+Grid : Message : 11296.719820 s : *******************************************
