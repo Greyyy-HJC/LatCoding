@@ -141,9 +141,6 @@ propag = core.invertPropagator(dirac, b, 1, 0) # NOTE or "propag = core.invertPr
 prop_exact_f = g.mspincolor(grid)
 gpt.LatticePropagatorGPT(prop_exact_f, GEN_SIMD_WIDTH, propag)
 
-sequential_bw_prop_down = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 2, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
-sequential_bw_prop_up = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 1, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
-
 qext_xyz = [[v[0], v[1], v[2]] for v in parameters["qext"]] #! [x, y, z] to be consistent with "qext"
 phases_3pt_pyq = phase.MomentumPhase(latt_info).getPhases(qext_xyz, src_pos)
 
@@ -158,11 +155,12 @@ for seq in sequential_bw_prop_down_pyq:
     gpt.LatticePropagatorGPT(seq_prop, GEN_SIMD_WIDTH, core.LatticePropagator(latt_info, seq))
     sequential_bw_prop_down.append(seq_prop)
 
-    sequential_bw_prop_up = []
-    for seq in sequential_bw_prop_up_pyq:
-        seq_prop = g.mspincolor(grid)
-        gpt.LatticePropagatorGPT(seq_prop, GEN_SIMD_WIDTH, core.LatticePropagator(latt_info, seq))
-        sequential_bw_prop_up.append(seq_prop)
+sequential_bw_prop_up = []
+for seq in sequential_bw_prop_up_pyq:
+    seq_prop = g.mspincolor(grid)
+    gpt.LatticePropagatorGPT(seq_prop, GEN_SIMD_WIDTH, core.LatticePropagator(latt_info, seq))
+    sequential_bw_prop_up.append(seq_prop)
+    
 t_seq = time.time() - t0
 g.message(f"TIME GPT: create_bw_seq", t_seq)
 
