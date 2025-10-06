@@ -52,7 +52,7 @@ parameters = {
 
     # "qext": [[x,y,z,0] for x in [-2] for y in [-2] for z in [-1]], # momentum transfer for TMD, pf = pi + q
     "qext": [list(v + (0,)) for v in {tuple(sorted((x, y, z))) for x in [0] for y in [0] for z in [1]}], # momentum transfer for TMD, pf = pi + q
-    "qext_PDF": [[x,y,z,0] for x in [0] for y in [0] for z in [0]], # momentum transfer for PDF, not used 
+    "qext_PDF": [[x,y,z,0] for x in [1] for y in [1] for z in [2]], # momentum transfer for PDF, not used 
     "pf": [0,0,7,0],
     "p_2pt": [[x,y,z,0] for x in [1] for y in [1] for z in [7]], # 2pt momentum, should match pf & pi
 
@@ -141,41 +141,52 @@ propag = core.invertPropagator(dirac, b, 1, 0) # NOTE or "propag = core.invertPr
 prop_exact_f = g.mspincolor(grid)
 gpt.LatticePropagatorGPT(prop_exact_f, GEN_SIMD_WIDTH, propag)
 
-sequential_bw_prop_down = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 2, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
-sequential_bw_prop_up = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 1, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
-
-qext_xyz = [v[:3] for v in parameters["qext"]] #! [x, y, z] to be consistent with "qext"
+qext_xyz = [[v[0], v[1], v[2]] for v in parameters["qext"]] #! [x, y, z] to be consistent with "qext"
 phases_3pt_pyq = phase.MomentumPhase(latt_info).getPhases(qext_xyz, src_pos)
 
 sequential_bw_prop_down_pyq = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 2, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
 sequential_bw_prop_up_pyq = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 1, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
 
+cp.cuda.runtime.deviceSynchronize()
+t0 = time.time()
 sequential_bw_prop_down = []
 for seq in sequential_bw_prop_down_pyq:
     seq_prop = g.mspincolor(grid)
     gpt.LatticePropagatorGPT(seq_prop, GEN_SIMD_WIDTH, core.LatticePropagator(latt_info, seq))
     sequential_bw_prop_down.append(seq_prop)
 
-    sequential_bw_prop_up = []
-    for seq in sequential_bw_prop_up_pyq:
-        seq_prop = g.mspincolor(grid)
-        gpt.LatticePropagatorGPT(seq_prop, GEN_SIMD_WIDTH, core.LatticePropagator(latt_info, seq))
-        sequential_bw_prop_up.append(seq_prop)
+sequential_bw_prop_up = []
+for seq in sequential_bw_prop_up_pyq:
+    seq_prop = g.mspincolor(grid)
+    gpt.LatticePropagatorGPT(seq_prop, GEN_SIMD_WIDTH, core.LatticePropagator(latt_info, seq))
+    sequential_bw_prop_up.append(seq_prop)
+    
+t_seq = time.time() - t0
+g.message(f"TIME GPT: create_bw_seq", t_seq)
 
-    g.message("\ncontract_PDF loop: GI with links")
-    for iW, WL_indices in enumerate(W_index_list_PDF):
-        W = Measurement.create_PDF_Wilsonline(U_prime, WL_indices)
+g.message("\ncontract_PDF loop: GI with links")
+for iW, WL_indices in enumerate(W_index_list_PDF):
+    cp.cuda.runtime.deviceSynchronize()
+    t0 = time.time()
+    
+    W = Measurement.create_PDF_Wilsonline(U_prime, WL_indices)
+    tmd_forward_prop = Measurement.create_fw_prop_PDF(prop_exact_f, [W], [WL_indices])
+    
+    cp.cuda.runtime.deviceSynchronize()
+    t_forward_prop = time.time() - t0
+    g.message(f"TIME GPT: create_fw_prop_PDF {iW+1}/{len(W_index_list_PDF)} {WL_indices}", t_forward_prop)
+    
+    qtmd_tag_exact_D = get_qTMD_file_tag(data_dir,lat_tag,conf,"GI_PDF.D.ex", src_pos, sm_tag+'.'+pf_tag)
+    qtmd_tag_exact_U = get_qTMD_file_tag(data_dir,lat_tag,conf,"GI_PDF.U.ex", src_pos, sm_tag+'.'+pf_tag)
+    g.message("Starting TMD contractions")
 
-        tmd_forward_prop = Measurement.create_fw_prop_PDF(prop_exact_f, [W], [WL_indices])
-        g.message("TMD forward prop done")
+    proton_TMDs_down = Measurement.contract_PDF(tmd_forward_prop, sequential_bw_prop_down, phases_PDF, WL_indices, qtmd_tag_exact_D, iW)
+    proton_TMDs_up = Measurement.contract_PDF(tmd_forward_prop, sequential_bw_prop_up, phases_PDF, WL_indices, qtmd_tag_exact_U, iW)
+    
+    cp.cuda.runtime.deviceSynchronize()
+    t_contract = time.time() - t0
+    g.message(f"TIME GPT: contract_PDF {iW+1}/{len(W_index_list_PDF)} {WL_indices}", t_contract)
 
-        qtmd_tag_exact_D = get_qTMD_file_tag(data_dir,lat_tag,conf,"GI_PDF.D.ex", src_pos, sm_tag+'.'+pf_tag)
-        qtmd_tag_exact_U = get_qTMD_file_tag(data_dir,lat_tag,conf,"GI_PDF.U.ex", src_pos, sm_tag+'.'+pf_tag)
-        g.message("Starting TMD contractions")
-
-        proton_TMDs_down = Measurement.contract_PDF(tmd_forward_prop, sequential_bw_prop_down, phases_PDF, WL_indices, qtmd_tag_exact_D, iW)
-        proton_TMDs_up = Measurement.contract_PDF(tmd_forward_prop, sequential_bw_prop_up, phases_PDF, WL_indices, qtmd_tag_exact_U, iW)
-
-    g.message("\ncontract_PDF DONE: GI with links")
+g.message("\ncontract_PDF DONE: GI with links")
 
 
