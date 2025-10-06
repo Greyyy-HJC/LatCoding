@@ -299,7 +299,7 @@ class proton_TMD(proton_measurement):
     def create_fw_prop_PDF(self, prop_f, W, W_index_list):
         g.message("Creating list of W*prop_f")
         prop_list = []
-        
+
         for i, idx in enumerate(W_index_list):
 
             current_b_T = idx[0]

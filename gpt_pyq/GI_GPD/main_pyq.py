@@ -11,7 +11,7 @@ import math
 
 # load gpt modules
 import gpt as g 
-from PyQUDA_proton_qTMD_draft import proton_TMD, pyquda_gamma_ls, pyq_gamma_order #! import pyquda_gamma_ls and pyq_gamma_order for 3pt
+from PyQUDA_proton_qTMD_draft import proton_TMD, pyq_gamma_order, my_gammas  #! gamma basis information for PyQUDA contractions
 from tools import *
 from io_corr import *
 
@@ -97,31 +97,6 @@ def test_shift(prop_f_pyq):
     return None
 
 
-def create_fw_prop_TMD_CG_pyquda(prop_f_pyq, W_index):
-    
-    for spin in range(4):
-        for color in range(3):
-            fermion = prop_f_pyq.getFermion(spin, color)
-            fermion_shift = gauge.pure_gauge.covDev(fermion, transverse_direction)
-            fermion_shift = gauge.pure_gauge.covDev(fermion_shift, Z)
-            
-            prop_f_pyq.setFermion(fermion_shift, spin, color)
-    
-    current_b_T = W_index[0]
-    current_bz = W_index[1]
-    transverse_direction = W_index[3] # 0, 1
-        
-    if transverse_direction == 0:
-        transverse_direction = X
-    elif transverse_direction == 1:
-        transverse_direction = Y
-            
-    prop_shift_pyq = prop_f_pyq.shift(current_b_T, transverse_direction).shift(round(current_bz), Z)
-    
-    return prop_shift_pyq
-
-
-
 # --------------------------
 # Load gauge and create inverter
 # --------------------------
@@ -158,8 +133,6 @@ src_pos = [1,2,3,4]
 #! Measurement
 W_index_list_PDF = Measurement.create_PDF_Wilsonline_index_list(U[0].grid)
 
-phases_PDF = Measurement.make_mom_phases_PDF(U[0].grid, src_pos)
-
 srcDp = Measurement.create_src_2pt(src_pos, trafo, U[0].grid)
 b = gpt.LatticePropagatorGPT(srcDp, GEN_SIMD_WIDTH)
 b.toDevice()
@@ -167,68 +140,90 @@ propag = core.invertPropagator(dirac, b, 1, 0) # NOTE or "propag = core.invertPr
 prop_exact_f = g.mspincolor(grid)
 gpt.LatticePropagatorGPT(prop_exact_f, GEN_SIMD_WIDTH, propag)
 
-sequential_bw_prop_down = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 2, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
-sequential_bw_prop_up = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 1, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
+sequential_bw_prop_down_pyq = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 2, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
+sequential_bw_prop_up_pyq = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 1, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
 
-qext_xyz = [v[:3] for v in parameters["qext"]] #! [x, y, z] to be consistent with "qext"
-phases_3pt_pyq = phase.MomentumPhase(latt_info).getPhases(qext_xyz, src_pos)
+qext_pdf_xyz = [[v[0], v[1], v[2]] for v in parameters["qext_PDF"]]
+phases_pdf_pyq = phase.MomentumPhase(latt_info).getPhases(qext_pdf_xyz, src_pos)
 
-# sequential_bw_prop_down_pyq = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 2, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
-# sequential_bw_prop_up_pyq = Measurement.create_bw_seq_Pyquda_pyquda(dirac, prop_exact_f, trafo, 1, src_pos, interpolation) # NOTE, this is a list of propagators for each proton polarization
+cp.cuda.runtime.deviceSynchronize()
+t0 = time.time()
+sequential_prop_down = contract(
+    "ij, pwtzyxilab, kl -> pwtzyxkjba",
+    G5,
+    sequential_bw_prop_down_pyq.conj(),
+    G5,
+)
+sequential_prop_up = contract(
+    "ij, pwtzyxilab, kl -> pwtzyxkjba",
+    G5,
+    sequential_bw_prop_up_pyq.conj(),
+    G5,
+)
+t_seq = time.time() - t0
+g.message(f"TIME PyQUDA: create_bw_seq", t_seq)
 
-sequential_bw_prop_down_pyq = contract(
-        "qwtzyx, pwtzyxjicf, gim -> pqgwtzyxjmcf",
-        phases_3pt_pyq, sequential_bw_prop_down, pyquda_gamma_ls
-    )
-sequential_bw_prop_up_pyq = contract(
-        "qwtzyx, pwtzyxjicf, gim -> pqgwtzyxjmcf",
-        phases_3pt_pyq, sequential_bw_prop_up, pyquda_gamma_ls
-    )
+g.message("\ncontract_PDF loop: GI with links")
 
-print(">>> DEBUG:")
-print(np.shape(sequential_bw_prop_down_pyq))
+
+tmd_forward_prop_pyq = propag.copy()
 
 for iW, WL_indices in enumerate(W_index_list_PDF):
-    current_b_T = WL_indices[0]
-    current_bz = WL_indices[1]
-    transverse_direction = WL_indices[3] # 0, 1
+    cp.cuda.runtime.deviceSynchronize()
+    t0 = time.time()
+    temp_down = []
+    for seq in sequential_prop_down:
+        seq_lp = core.LatticePropagator(latt_info, seq)
+        temp1 = pycontract.mesonAllSinkTwoPoint(tmd_forward_prop_pyq, seq_lp, gamma.Gamma(0)).data
+        contracted = contract("qwtzyx, gwtzyx -> qgt", phases_pdf_pyq, temp1).get()
+        gathered = core.gatherLattice(contracted, [2, -1, -1, -1])
+        temp_down.append(np.asarray(gathered))
+
+    temp_up = []
+    for seq in sequential_prop_up:
+        seq_lp = core.LatticePropagator(latt_info, seq)
+        temp1 = pycontract.mesonAllSinkTwoPoint(tmd_forward_prop_pyq, seq_lp, gamma.Gamma(0)).data
+        contracted = contract("qwtzyx, gwtzyx -> qgt", phases_pdf_pyq, temp1).get()
+        gathered = core.gatherLattice(contracted, [2, -1, -1, -1])
+        temp_up.append(np.asarray(gathered))
+    
+    cp.cuda.runtime.deviceSynchronize()
+    t_contract = time.time() - t0
+    g.message(f"TIME PyQUDA: contract_PDF {iW+1}/{len(W_index_list_PDF)} {WL_indices}", t_contract)
     
     
+    cp.cuda.runtime.deviceSynchronize()
+    t0 = time.time()
     
-    tmd_forward_prop = create_fw_prop_TMD_CG_pyquda(propag, WL_indices)
+    for spin in range(4):
+        for color in range(3):
+            fermion = tmd_forward_prop_pyq.getFermion(spin, color)
+            fermion_shift = gauge.pure_gauge.covDev(fermion, 2)
+            tmd_forward_prop_pyq.setFermion(fermion_shift, spin, color)
+
+    cp.cuda.runtime.deviceSynchronize()
+    t_shift = time.time() - t0
+    g.message(f"TIME PyQUDA: create_fw_prop_PDF {iW+1}/{len(W_index_list_PDF)} {WL_indices}", t_shift)
+    
 
 
+    temp_down = np.stack(temp_down, axis=0)
+    temp_up = np.stack(temp_up, axis=0)
 
+    temp_down = temp_down[:, :, pyq_gamma_order, :]
+    temp_up = temp_up[:, :, pyq_gamma_order, :]
 
-# >>> DEBUG:
-# (1, 2, 32, 8, 8, 4, 4, 4, 3, 3)
+    qtmd_tag_exact_D = get_qTMD_file_tag(data_dir, lat_tag, conf, "GI_PDF.D.ex", src_pos, sm_tag + '.' + pf_tag)
+    qtmd_tag_exact_U = get_qTMD_file_tag(data_dir, lat_tag, conf, "GI_PDF.U.ex", src_pos, sm_tag + '.' + pf_tag)
 
-sequential_bw_prop_down = []
-for seq in sequential_bw_prop_down_pyq:
-    seq_prop = g.mspincolor(grid)
-    gpt.LatticePropagatorGPT(seq_prop, GEN_SIMD_WIDTH, core.LatticePropagator(latt_info, seq))
-    sequential_bw_prop_down.append(seq_prop)
+    g.message("Starting PyQUDA TMD contractions")
+    for pol_idx, pol in enumerate(Measurement.pol_list):
+        pol_tag_D = qtmd_tag_exact_D + "." + pol
+        pol_tag_U = qtmd_tag_exact_U + "." + pol
+        corr_down = [temp_down[pol_idx]]
+        corr_up = [temp_up[pol_idx]]
+        if g.rank() == pol_idx:
+            save_qTMD_proton_hdf5_subset(corr_down, pol_tag_D, my_gammas, Measurement.qlist, [WL_indices], iW, Measurement.t_insert)
+            save_qTMD_proton_hdf5_subset(corr_up, pol_tag_U, my_gammas, Measurement.qlist, [WL_indices], iW, Measurement.t_insert)
 
-    sequential_bw_prop_up = []
-    for seq in sequential_bw_prop_up_pyq:
-        seq_prop = g.mspincolor(grid)
-        gpt.LatticePropagatorGPT(seq_prop, GEN_SIMD_WIDTH, core.LatticePropagator(latt_info, seq))
-        sequential_bw_prop_up.append(seq_prop)
-
-    g.message("\ncontract_PDF loop: GI with links")
-    for iW, WL_indices in enumerate(W_index_list_PDF):
-        W = Measurement.create_PDF_Wilsonline(U_prime, WL_indices)
-
-        tmd_forward_prop = Measurement.create_fw_prop_PDF(prop_exact_f, [W], [WL_indices])
-        g.message("TMD forward prop done")
-
-        qtmd_tag_exact_D = get_qTMD_file_tag(data_dir,lat_tag,conf,"GI_PDF.D.ex", src_pos, sm_tag+'.'+pf_tag)
-        qtmd_tag_exact_U = get_qTMD_file_tag(data_dir,lat_tag,conf,"GI_PDF.U.ex", src_pos, sm_tag+'.'+pf_tag)
-        g.message("Starting TMD contractions")
-
-        proton_TMDs_down = Measurement.contract_PDF(tmd_forward_prop, sequential_bw_prop_down, phases_PDF, WL_indices, qtmd_tag_exact_D, iW)
-        proton_TMDs_up = Measurement.contract_PDF(tmd_forward_prop, sequential_bw_prop_up, phases_PDF, WL_indices, qtmd_tag_exact_U, iW)
-
-    g.message("\ncontract_PDF DONE: GI with links")
-
-
+g.message("\ncontract_PDF DONE: GI with links")

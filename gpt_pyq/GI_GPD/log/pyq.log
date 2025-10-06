@@ -1,0 +1,291 @@
+MPI version is unknown - bad things may happen
+AcceleratorCudaInit[0]: ========================
+AcceleratorCudaInit[0]: Device Number    : 0
+AcceleratorCudaInit[0]: ========================
+AcceleratorCudaInit[0]: Device identifier: NVIDIA GeForce RTX 3060
+AcceleratorCudaInit[0]:   totalGlobalMem: 12626493440 
+AcceleratorCudaInit[0]:   managedMemory: 1 
+AcceleratorCudaInit[0]:   isMultiGpuBoard: 0 
+AcceleratorCudaInit[0]:   warpSize: 32 
+AcceleratorCudaInit[0]:   pciBusID: 7 
+AcceleratorCudaInit[0]:   pciDeviceID: 0 
+AcceleratorCudaInit[0]: maxGridSize (2147483647,65535,65535)
+AcceleratorCudaInit: using default device 
+AcceleratorCudaInit: assume user either uses
+AcceleratorCudaInit: a) IBM jsrun, or 
+AcceleratorCudaInit: b) invokes through a wrapping script to set CUDA_VISIBLE_DEVICES, UCX_NET_DEVICES, and numa binding 
+AcceleratorCudaInit: Configure options --enable-setdevice=no 
+local rank 0 device 0 bus id: 0000:07:00.0
+AcceleratorCudaInit: ================================================
+SharedMemoryMpi:  World communicator of size 1
+SharedMemoryMpi:  Node  communicator of size 1
+0SharedMemoryMpi:  SharedMemoryMPI.cc acceleratorAllocDevice 1073741824bytes at 0x742106000000 - 742145ffffff for comms buffers 
+Setting up IPC
+
+__|__|__|__|__|__|__|__|__|__|__|__|__|__|__
+__|__|__|__|__|__|__|__|__|__|__|__|__|__|__
+__|_ |  |  |  |  |  |  |  |  |  |  |  | _|__
+__|_                                    _|__
+__|_   GGGG    RRRR    III    DDDD      _|__
+__|_  G        R   R    I     D   D     _|__
+__|_  G        R   R    I     D    D    _|__
+__|_  G  GG    RRRR     I     D    D    _|__
+__|_  G   G    R  R     I     D   D     _|__
+__|_   GGGG    R   R   III    DDDD      _|__
+__|_                                    _|__
+__|__|__|__|__|__|__|__|__|__|__|__|__|__|__
+__|__|__|__|__|__|__|__|__|__|__|__|__|__|__
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |  
+
+
+Copyright (C) 2015 Peter Boyle, Azusa Yamaguchi, Guido Cossu, Antonin Portelli and other authors
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+Current Grid git commit hash=46c717e873bb91677e8961a6fc5bfc58bc2171a5: (HEAD -> gpt_proton, origin/gpt_proton) clean
+
+Grid : Message : ================================================ 
+Grid : Message : MPI is initialised and logging filters activated 
+Grid : Message : ================================================ 
+Grid : Message : This rank is running on host Moonway
+Grid : Message : Requested 1073741824 byte stencil comms buffers 
+Grid : Message : MemoryManager Cache 10101194752 bytes 
+Grid : Message : MemoryManager::Init() setting up
+Grid : Message : MemoryManager::Init() cache pool for recent host   allocations: SMALL 8 LARGE 2 HUGE 0
+Grid : Message : MemoryManager::Init() cache pool for recent device allocations: SMALL 16 LARGE 8 Huge 0
+Grid : Message : MemoryManager::Init() cache pool for recent shared allocations: SMALL 16 LARGE 8 Huge 0
+Grid : Message : MemoryManager::Init() Non unified: Caching accelerator data in dedicated memory
+Grid : Message : MemoryManager::Init() Using cudaMalloc
+
+=============================================
+              Initialized GPT                
+     Copyright (C) 2020 Christoph Lehner     
+=============================================
+GPT :       0.941771 s : --lat_tag l64c64a076
+GPT :       0.941804 s : --sm_tag 1HYP_GSRC_W90_k3_T5
+GPT :       0.941811 s : --config_num 0
+PyQUDA INFO: Using the grid size (1, 1, 1, 1)
+PyQUDA INFO: Using CUDA backend cupy
+PyQUDA INFO: Using QUDA_RESOURCE_PATH=.cache
+Disabling GPU-Direct RDMA access
+Enabling peer-to-peer copy engine and direct load/store access
+QUDA 1.1.0 (git 1.1.0-e23cd7e4f-sm_86)
+CUDA Driver version = 12020
+CUDA Runtime version = 12020
+Graphic driver version = 535.261.03
+Found device 0: NVIDIA GeForce RTX 3060
+Using device 0: NVIDIA GeForce RTX 3060
+Initializing monitoring on device 0: NVIDIA GeForce RTX 3060
+WARNING: Data reordering done on GPU (set with QUDA_REORDER_LOCATION=GPU/CPU)
+WARNING: The path ".cache" specified by QUDA_RESOURCE_PATH does not exist or is not a directory.
+WARNING: Caching of tuned parameters will be disabled
+WARNING: Cache file not found.  All kernels will be re-tuned (if tuning is enabled).
+WARNING: Using device memory pool allocator
+WARNING: Using pinned memory pool allocator
+cublasCreated successfully
+GPT :       0.973764 s : NERSC file format; reading ../../conf/S8T32_cg/gauge/wilson_b6.cg.1e-08.0
+GPT :       0.973780 s :    BEGIN_HEADER
+GPT :       0.973786 s : 	HDR_VERSION = 1.0
+GPT :       0.973792 s : 	DATATYPE = 4D_SU3_GAUGE_3x3
+GPT :       0.973797 s : 	STORAGE_FORMAT =
+GPT :       0.973801 s : 	DIMENSION_1 = 8
+GPT :       0.973806 s : 	DIMENSION_2 = 8
+GPT :       0.973809 s : 	DIMENSION_3 = 8
+GPT :       0.973814 s : 	DIMENSION_4 = 32
+GPT :       0.973817 s : 	LINK_TRACE = 0.6662761893
+GPT :       0.973821 s : 	PLAQUETTE  = 0.595124939
+GPT :       0.973825 s : 	BOUNDARY_1 = PERIODIC
+GPT :       0.973829 s : 	BOUNDARY_2 = PERIODIC
+GPT :       0.973833 s : 	BOUNDARY_3 = PERIODIC
+GPT :       0.973844 s : 	BOUNDARY_4 = PERIODIC
+GPT :       0.973848 s : 	CHECKSUM =   d62a45d9
+GPT :       0.973852 s : 	SCIDAC_CHECKSUMA =          0
+GPT :       0.973856 s : 	SCIDAC_CHECKSUMB =          0
+GPT :       0.973860 s : 	ENSEMBLE_ID = gpt
+GPT :       0.973864 s : 	ENSEMBLE_LABEL =
+GPT :       0.973868 s : 	SEQUENCE_NUMBER = 1
+GPT :       0.973872 s : 	CREATOR = jinchen
+GPT :       0.973876 s : 	CREATOR_HARDWARE = Moonway-x86_64-Linux-6.8.0-60-generic
+GPT :       0.973880 s : 	CREATION_DATE = Tue Jun  3 21:16:00 2025 EDT
+GPT :       0.973884 s : 	ARCHIVE_DATE = Tue Jun  3 21:16:00 2025 EDT
+GPT :       0.973888 s : 	FLOATING_POINT = IEEE64BIG
+GPT :       0.973892 s :    END_HEADER
+GPT :       0.993670 s : Read 0.00878906 GB at 0.459943 GB/s (0.707223 GB/s for distribution, 1.3161 GB/s for munged read, 144 GB/s for checksum, 6.77523 GB/s for munging, 1 readers)
+Grid : Message : 0.893575 s :  Stencil object allocated for 4096 sites table 0x74218dc44400 GridPtr 0x651ed6c21cf0
+Grid : Message : 0.893645 s :  Stencil object allocated for 4096 sites table 0x74218dc74400 GridPtr 0x651ed6c21cf0
+Grid : Message : 0.893704 s :  Stencil object allocated for 4096 sites table 0x74218dca4400 GridPtr 0x651ed6c21cf0
+Grid : Message : 0.893761 s :  Stencil object allocated for 4096 sites table 0x74218dcd4400 GridPtr 0x651ed6c21cf0
+GPT :       1.728236 s : ====================================================================================================================================
+GPT :       1.728263 s :                                                  GPT Memory Report                
+GPT :       1.728276 s : ====================================================================================================================================
+GPT :       1.728281 s :  Lattice fields on all ranks             0.00878906 GB
+GPT :       1.728286 s :  Lattice fields per rank                 0.00878906 GB
+GPT :       1.728290 s :  Resident memory per rank                1.76999 GB
+GPT :       1.728293 s :  Total memory available (host)           55.9227 GB
+GPT :       1.728298 s :  Total memory available (accelerator)    10.0693 GB
+GPT :       1.728302 s : ====================================================================================================================================
+Grid : Message : 1.672968 s :  Gauge fixing to Coulomb gauge time=3 plaq= 0.595124939 link trace = 0.666276189
+Grid : Message : 1.690871 s :  Iteration 0 plaq= 0.595124939 dmuAmu 8.85093533e-09
+Grid : Message : 1.691034 s :  Iteration 0 Phi= -4.4473869e-10 Omega= 8.8817842e-16 trG 1
+Grid : Message : 1.691039 s : Converged ! 
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 7.936491e-11, true = 7.936491e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 1.294 secs, Performance = 91.042 GFLOPS
+BiCGstab: Convergence at 23 iterations, L2 relative residual: iterated = 5.210547e-11, true = 5.210547e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.008 secs, Performance = 229.528 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 4.967815e-11, true = 4.967815e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 232.376 GFLOPS
+BiCGstab: Convergence at 23 iterations, L2 relative residual: iterated = 6.652068e-11, true = 6.652068e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.008 secs, Performance = 228.683 GFLOPS
+BiCGstab: Convergence at 25 iterations, L2 relative residual: iterated = 5.740163e-11, true = 5.740163e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 227.458 GFLOPS
+BiCGstab: Convergence at 23 iterations, L2 relative residual: iterated = 8.672910e-11, true = 8.672910e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 221.223 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 4.756625e-11, true = 4.756625e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.111 GFLOPS
+BiCGstab: Convergence at 23 iterations, L2 relative residual: iterated = 6.546476e-11, true = 6.546476e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.008 secs, Performance = 228.357 GFLOPS
+BiCGstab: Convergence at 23 iterations, L2 relative residual: iterated = 6.529108e-11, true = 6.529108e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.008 secs, Performance = 228.982 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 4.577640e-11, true = 4.577640e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 230.977 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 2.103506e-11, true = 2.103506e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.191 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 6.054700e-11, true = 6.054700e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.245 GFLOPS
+GPT :      10.313227 s : starting diquark contractions for down quark insertion and Polarization  PpUnpol
+GPT :      10.733221 s : diquark contractions for Polarization  0 PpUnpol  done
+BiCGstab: Convergence at 25 iterations, L2 relative residual: iterated = 2.629411e-11, true = 2.629411e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 224.371 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 5.036857e-11, true = 5.036857e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 226.460 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 4.514506e-11, true = 4.514506e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.245 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 8.468977e-11, true = 8.468977e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.513 GFLOPS
+BiCGstab: Convergence at 23 iterations, L2 relative residual: iterated = 8.827725e-11, true = 8.827725e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.008 secs, Performance = 228.195 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 5.764626e-11, true = 5.764626e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.405 GFLOPS
+BiCGstab: Convergence at 25 iterations, L2 relative residual: iterated = 4.459258e-11, true = 4.459258e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 227.582 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 6.084280e-11, true = 6.084280e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.567 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 5.151632e-11, true = 5.151632e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.674 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 3.783801e-11, true = 3.783801e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 225.529 GFLOPS
+BiCGstab: Convergence at 23 iterations, L2 relative residual: iterated = 7.899116e-11, true = 7.899116e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.008 secs, Performance = 228.710 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 8.092296e-11, true = 8.092296e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 224.605 GFLOPS
+GPT :      11.435033 s : starting diquark contractions for up quark insertion and Polarization  PpUnpol
+GPT :      11.553720 s : diquark contractions for Polarization  0 PpUnpol  done
+BiCGstab: Convergence at 25 iterations, L2 relative residual: iterated = 5.017347e-11, true = 5.017347e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 224.683 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 5.348652e-11, true = 5.348652e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 225.228 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 4.929134e-11, true = 4.929134e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 224.580 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 9.570247e-11, true = 9.570247e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 224.953 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 4.170483e-11, true = 4.170483e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 230.683 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 7.991364e-11, true = 7.991364e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.620 GFLOPS
+BiCGstab: Convergence at 26 iterations, L2 relative residual: iterated = 1.219122e-11, true = 1.219122e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 237.424 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 6.460130e-11, true = 6.460130e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 224.307 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 5.127483e-11, true = 5.127483e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.008 secs, Performance = 239.701 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 9.080710e-11, true = 9.080710e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.620 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 8.036197e-11, true = 8.036197e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 231.836 GFLOPS
+BiCGstab: Convergence at 24 iterations, L2 relative residual: iterated = 6.724916e-11, true = 6.724916e-11 (requested = 1.000000e-10)
+PyQUDA INFO: Time = 0.009 secs, Performance = 224.480 GFLOPS
+GPT :      11.964180 s : TIME PyQUDA: create_bw_seq 0.0007584095001220703
+GPT :      11.964196 s : 
+                       : contract_PDF loop: GI with links
+GPT :      12.005629 s : TIME PyQUDA: contract_PDF 1/3 [0, 0, 0, 0] 0.010549306869506836
+GPT :      12.139583 s : TIME PyQUDA: create_fw_prop_PDF 1/3 [0, 0, 0, 0] 0.1339273452758789
+GPT :      12.139665 s : Starting PyQUDA TMD contractions
+GPT :      12.139686 s : -->> [[0, 0, 0, 0]]
+GPT :      12.144108 s : -->> [[0, 0, 0, 0]]
+GPT :      12.157481 s : TIME PyQUDA: contract_PDF 2/3 [0, 1, 0, 0] 0.009474515914916992
+GPT :      12.159590 s : TIME PyQUDA: create_fw_prop_PDF 2/3 [0, 1, 0, 0] 0.0020880699157714844
+GPT :      12.159651 s : Starting PyQUDA TMD contractions
+GPT :      12.159670 s : -->> [[0, 1, 0, 0]]
+GPT :      12.164010 s : -->> [[0, 1, 0, 0]]
+GPT :      12.177671 s : TIME PyQUDA: contract_PDF 3/3 [0, 2, 0, 0] 0.00943446159362793
+GPT :      12.179770 s : TIME PyQUDA: create_fw_prop_PDF 3/3 [0, 2, 0, 0] 0.0020761489868164062
+GPT :      12.179832 s : Starting PyQUDA TMD contractions
+GPT :      12.179851 s : -->> [[0, 2, 0, 0]]
+GPT :      12.184049 s : -->> [[0, 2, 0, 0]]
+GPT :      12.188188 s : 
+                       : contract_PDF DONE: GI with links
+WARNING: Storing profile info disabled
+
+               initQuda Total time =     0.030 secs
+                     init     =     0.030 secs ( 99.980%),	 with        2 calls at 1.501e+04 us per call
+        total accounted       =     0.030 secs ( 99.980%)
+        total missing         =     0.000 secs (  0.020%)
+
+          loadGaugeQuda Total time =     0.141 secs
+                 download     =     0.110 secs ( 77.871%),	 with        2 calls at 5.493e+04 us per call
+                     init     =     0.000 secs (  0.106%),	 with       13 calls at 1.154e+01 us per call
+                  compute     =     0.031 secs ( 21.888%),	 with        4 calls at 7.719e+03 us per call
+                    comms     =     0.000 secs (  0.030%),	 with        1 calls at 4.200e+01 us per call
+                     free     =     0.000 secs (  0.001%),	 with        3 calls at 6.667e-01 us per call
+        total accounted       =     0.141 secs ( 99.897%)
+        total missing         =     0.000 secs (  0.103%)
+
+         loadCloverQuda Total time =     6.202 secs
+                     init     =     0.000 secs (  0.006%),	 with        6 calls at 6.583e+01 us per call
+                  compute     =     5.916 secs ( 95.400%),	 with        7 calls at 8.452e+05 us per call
+                    comms     =     0.000 secs (  0.001%),	 with        1 calls at 4.200e+01 us per call
+                     free     =     0.000 secs (  0.000%),	 with        3 calls at 2.333e+00 us per call
+        total accounted       =     5.917 secs ( 95.407%)
+        total missing         =     0.285 secs (  4.593%)
+
+     invertMultiSrcQuda Total time =     1.600 secs
+                     init     =     0.077 secs (  4.841%),	 with     1270 calls at 6.100e+01 us per call
+                 preamble     =     0.396 secs ( 24.726%),	 with      149 calls at 2.655e+03 us per call
+                  compute     =     1.089 secs ( 68.076%),	 with       49 calls at 2.223e+04 us per call
+                 epilogue     =     0.001 secs (  0.080%),	 with       72 calls at 1.789e+01 us per call
+                     free     =     0.000 secs (  0.007%),	 with      404 calls at 2.896e-01 us per call
+        total accounted       =     1.564 secs ( 97.731%)
+        total missing         =     0.036 secs (  2.269%)
+
+                endQuda Total time =     0.004 secs
+                     free     =     0.000 secs (  0.083%),	 with        7 calls at 4.286e-01 us per call
+        total accounted       =     0.000 secs (  0.083%)
+        total missing         =     0.004 secs ( 99.917%)
+
+       initQuda-endQuda Total time =    11.249 secs
+
+                   QUDA Total time =     7.976 secs
+                 download     =     0.110 secs (  1.377%),	 with        2 calls at 5.493e+04 us per call
+                     init     =     0.108 secs (  1.354%),	 with     1291 calls at 8.368e+01 us per call
+                 preamble     =     0.396 secs (  4.960%),	 with      149 calls at 2.655e+03 us per call
+                  compute     =     7.036 secs ( 88.216%),	 with       60 calls at 1.173e+05 us per call
+                    comms     =     0.000 secs (  0.001%),	 with        2 calls at 4.300e+01 us per call
+                 epilogue     =     0.001 secs (  0.016%),	 with       72 calls at 1.792e+01 us per call
+                     free     =     0.000 secs (  0.002%),	 with      417 calls at 3.094e-01 us per call
+        total accounted       =     7.652 secs ( 95.927%)
+        total missing         =     0.325 secs (  4.073%)
+
+Device memory used = 53.1 MiB
+Pinned device memory used = 0.0 MiB
+Managed memory used = 0.0 MiB
+Shmem memory used = 0.0 MiB
+Page-locked host memory used = 2.5 MiB
+Total host memory used >= 16.5 MiB
+
