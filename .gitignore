@@ -5,5 +5,7 @@ conf/S32T32/
 conf/*/wilson_b6.[5-9]
 conf/*/wilson_b6.[1-9][0-9]*
 
+test/**/*
+
 **/*.h5
 **/*.pkl
