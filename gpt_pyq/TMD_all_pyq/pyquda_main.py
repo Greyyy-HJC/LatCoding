@@ -9,9 +9,7 @@ import time
 from mpi4py import MPI
 import math
 
-# load gpt modules
-import gpt as g 
-from PyQUDA_proton_qTMD_draft import proton_TMD, pyq_gamma_order #! import pyquda_gamma_ls and pyq_gamma_order for 3pt
+from qTMD.developing.PyQUDA_proton_qTMD_draft import proton_TMD, pyquda_gamma_ls, pyq_gamma_order #! import pyquda_gamma_ls and pyq_gamma_order for 3pt
 from tools import *
 from io_corr import *
 
@@ -68,32 +66,6 @@ pf = parameters["pf"]
 pf_tag = "PX"+str(pf[0]) + "PY"+str(pf[1]) + "PZ"+str(pf[2]) + "dt" + str(parameters["t_insert"])
 gammalist = ["5", "T", "T5", "X", "X5", "Y", "Y5", "Z", "Z5", "I", "SXT", "SXY", "SXZ", "SYT", "SYZ", "SZT"]
 Measurement = proton_TMD(parameters)
-
-
-#todo: test the .shift() method in PyQUDA and g.cshift() in GPT
-def test_shift(prop_f_pyq):
-    Xdir = 0
-    Zdir = 2
-    prop_shiftx_pyq = prop_f_pyq.shift(1, Xdir)
-    prop_shiftz_pyq = prop_f_pyq.shift(1, Zdir)
-    
-    prop_f_gpt = g.mspincolor(grid)
-    gpt.LatticePropagatorGPT(prop_f_gpt, GEN_SIMD_WIDTH, prop_f_pyq)
-    
-    prop_shiftx_gpt = g.eval(g.cshift(prop_f_gpt,Xdir,1))
-    prop_shiftz_gpt = g.eval(g.cshift(prop_f_gpt,Zdir,1))
-    
-    prop_shiftx_gpt_pyq = gpt.LatticePropagatorGPT(prop_shiftx_gpt, GEN_SIMD_WIDTH)
-    prop_shiftz_gpt_pyq = gpt.LatticePropagatorGPT(prop_shiftz_gpt, GEN_SIMD_WIDTH)
-    
-    diffx = prop_shiftx_gpt_pyq.data - prop_shiftx_pyq.data
-    diffz = prop_shiftz_gpt_pyq.data - prop_shiftz_pyq.data
-    
-    g.message(f"DEBUG: Max difference in x direction: {np.max(np.abs(diffx))}")
-    g.message(f"DEBUG: Max difference in z direction: {np.max(np.abs(diffz))}")
-    
-    return None
-
 
 # --------------------------
 # Load gauge and create inverter
