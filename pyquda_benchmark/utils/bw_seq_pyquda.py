@@ -3,7 +3,6 @@ import cupy as cp
 from pyquda_utils import core, gamma
 from boosted_smearing_pyquda import boosted_smearing
 from pyquda_utils.phase import MomentumPhase
-from opt_einsum import contract
 
 Cg5 = (1j * gamma.gamma(2) @ gamma.gamma(8)) @ gamma.gamma(15)
 
@@ -74,7 +73,7 @@ def create_bw_seq_pyquda(prop, trafo, origin, sm_width, sm_boost, momentum, t_in
     
     G5 = gamma.gamma(15)
     
-    smearing_input = contract("jk,wtzyx,wtzyxkiba->wtzyxjiba", G5, mom_phase, seq_data)
+    smearing_input = cp.einsum("jk,wtzyx,wtzyxkiba->wtzyxjiba", G5, mom_phase, seq_data)
 
     return smearing_input
 
