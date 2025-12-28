@@ -3,6 +3,9 @@ import cupy as cp
 from pyquda_utils import core, gamma
 from boosted_smearing_pyquda import boosted_smearing
 from pyquda_utils.phase import MomentumPhase
+from pyquda.field import evenodd
+from opt_einsum import contract
+
 
 Cg5 = (1j * gamma.gamma(2) @ gamma.gamma(8)) @ gamma.gamma(15)
 
@@ -17,7 +20,7 @@ PpSxp = Pp @ Sxp
 PpSxm = Pp @ Sxm
 
 
-def create_bw_seq_pyquda(prop, trafo, origin, sm_width, sm_boost, momentum, t_insert):
+def create_bw_seq_pyquda(dirac, prop, trafo, origin, sm_width, sm_boost, momentum, t_insert):
     """
     PyQUDA version: Build backward sequential source.
     
@@ -56,26 +59,32 @@ def create_bw_seq_pyquda(prop, trafo, origin, sm_width, sm_boost, momentum, t_in
     t_sink = (t_source + t_insert) % Lt
     
     # Get data copy (GPU)
-    seq_data = src_seq.data.copy()
+    seq_data = src_seq.lexico()
     
     # Zero out non-insertion time slices
-    times = cp.arange(Lt)
-    mask = (times != t_sink) 
-    seq_data[:, mask] = 0    
+    mask = np.zeros_like(seq_data)
+    mask[t_sink, :, :, :, :, :, :, :] = 1
+    seq_data *= mask
+    
+    seq_data = evenodd(seq_data, axes=[0,1,2,3]) 
     
     # --- 3. Create momentum phase ---
-    # momentum: [px, py, pz, pt] (x, y, z, t)
-    # PyQUDA MomentumPhase typically expects order [t, z, y, x]
-    # We map momentum: x->mom[3], y->mom[2], z->mom[1], t->mom[0]
-    
     # Generate phase
-    mom_phase = MomentumPhase(latt_info).getPhase(momentum)
+    mom_phase = MomentumPhase(latt_info).getPhase(momentum, x0=origin)
     
     G5 = gamma.gamma(15)
     
-    smearing_input = cp.einsum("jk,wtzyx,wtzyxkiba->wtzyxjiba", G5, mom_phase, seq_data)
+    data = contract("ij, wtzyx, wtzyxkjba -> wtzyxikab", G5, mom_phase, seq_data.conj())
+    
+    smearing_input = core.LatticePropagator(latt_info)
+    smearing_input.data = data
+    
+    src = boosted_smearing(trafo, smearing_input, w=sm_width, boost=sm_boost)
+    prop_smeared = core.invertPropagator(dirac, src, 1, 0)
+    
+    dst_seq = contract( "wtzyxijfc, ik -> wtzyxjkcf", prop_smeared.data.conj(), G5 )
 
-    return smearing_input
+    return dst_seq
 
 def down_quark_insertion_pyquda(Q, Gamma, P):
     """

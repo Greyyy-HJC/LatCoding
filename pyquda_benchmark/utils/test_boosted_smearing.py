@@ -26,7 +26,7 @@ dirac.loadGauge(gauge)
 point_prop = source.propagator(latt_info, "point", [1,2,1,3])
 
 # U_trafo = identity
-U_data = cp.zeros((8,8,8,8,3,3), dtype=cp.complex128)
+U_data = cp.zeros((8,8,8,8,3,3), dtype=cp.complex128) #! (Lt,Lz,Ly,Lx,3,3)
 U_data[..., 0,0] = 1
 U_data[..., 1,1] = 1
 U_data[..., 2,2] = 1

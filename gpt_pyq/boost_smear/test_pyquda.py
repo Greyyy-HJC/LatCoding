@@ -15,10 +15,10 @@ csw_t = 1.02868
 xi_0 = 1.0
 nu = 1.0
 
-latt_info = core.LatticeInfo([8, 8, 8, 8], -1, xi_0 / nu)
+latt_info = core.LatticeInfo([8, 8, 8, 32], -1, xi_0 / nu)
 dirac = core.getClover(latt_info, mass, 1e-8, 10000, xi_0, csw_r, csw_t)
 
-gauge = io.readNERSCGauge("/home/jinchen/git/lat-software/LatCoding/conf/S8T8/wilson_b6.0")
+gauge = io.readNERSCGauge("/home/jinchen/git/lat-software/LatCoding/conf/S8T32/wilson_b6.0")
 
 dirac.loadGauge(gauge)
 
@@ -26,7 +26,7 @@ dirac.loadGauge(gauge)
 point_prop = source.propagator(latt_info, "point", [1,2,1,3])
 
 # U_trafo = identity
-U_data = cp.zeros((8,8,8,8,3,3), dtype=cp.complex128)
+U_data = cp.zeros((32,8,8,8,3,3), dtype=cp.complex128)
 U_data[..., 0,0] = 1
 U_data[..., 1,1] = 1
 U_data[..., 2,2] = 1
