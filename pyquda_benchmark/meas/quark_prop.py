@@ -59,7 +59,7 @@ for cfg in tqdm(range(N_conf), desc="Processing configurations"):
     )
 
 # Clean up resources
-dirac.destroy()
+# dirac.destroy()
 
 print("\n>>> shape of point_quark_corr: ", point_quark_corr[0].shape)
 

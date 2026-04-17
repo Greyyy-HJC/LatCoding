@@ -42,10 +42,10 @@ parameters = {
     
     # NOTE:
     "eta": [0],  # irrelavant for CG TMD
-    "b_z": 3,
-    "b_T": 0,
+    "b_z": 2,
+    "b_T": 2,
 
-    "qext": [list(v + (0,)) for v in {tuple(sorted((x, y, z))) for x in [1] for y in [2] for z in [1]}], # momentum transfer for TMD, pf = pi + q
+    "qext": [list(v + (0,)) for v in {tuple(sorted((x, y, z))) for x in [-2] for y in [-1] for z in [-1]}], # momentum transfer for TMD, pf = pi + q
     "qext_PDF": [[x,y,z,0] for x in [0] for y in [0] for z in [0]], # momentum transfer for PDF, not used 
     "pf": [0,0,7,0],
     "p_2pt": [[x,y,z,0] for x in [1] for y in [1] for z in [7]], # 2pt momentum, should match pf & pi

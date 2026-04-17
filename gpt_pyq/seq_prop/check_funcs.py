@@ -1,98 +1,27 @@
-# proton_seq_pyquda.py
 
 import cupy as cp
-from opt_einsum import contract
+from pyquda_utils import core, gamma
+import gpt as g
 
-from pyquda import init
-
-import numpy as np
-
-
-from types import SimpleNamespace
-
-from pyquda.field import LatticePropagator, LatticeGauge
-from pyquda_utils import core, source, gamma, io
-
-from boosted_smearing_pyquda import boosted_smearing
-
-width = 2.0
-boost_out = [1,2,1]
-pf = [0,0,7,0]
-t_insert = 4
-
-
-Cg5 = (1j * gamma.gamma(2) @ gamma.gamma(8)) @ gamma.gamma(15)
-
+Cg5_pyquda = (1j * gamma.gamma(2) @ gamma.gamma(8)) @ gamma.gamma(15)
 
 Pp = (gamma.gamma(0) + gamma.gamma(8)) * 0.25
 Szp = (gamma.gamma(0) - 1j*gamma.gamma(1) @ gamma.gamma(2))
 Szm = (gamma.gamma(0) + 1j*gamma.gamma(1) @ gamma.gamma(2))
 Sxp = (gamma.gamma(0) - 1j*gamma.gamma(2) @ gamma.gamma(4))
 Sxm = (gamma.gamma(0) + 1j*gamma.gamma(2) @ gamma.gamma(4))
-PpSzp = Pp @ Szp
+PpSzp_pyquda = Pp @ Szp
 
 
-from pyquda_utils.phase import MomentumPhase # 假设你有这个工具，如果没有见下方补充
+Cg5_gpt = (1j * g.gamma[1].tensor() * g.gamma[3].tensor()) * g.gamma[5].tensor()
 
+Pp = (g.gamma["I"].tensor() + g.gamma[3].tensor()) * 0.25
+Szp = (g.gamma["I"].tensor() - 1j*g.gamma[0].tensor()*g.gamma[1].tensor())
+Szm = (g.gamma["I"].tensor() + 1j*g.gamma[0].tensor()*g.gamma[1].tensor())
+Sxp = (g.gamma["I"].tensor() - 1j*g.gamma[1].tensor()*g.gamma[2].tensor())
+Sxm = (g.gamma["I"].tensor() + 1j*g.gamma[1].tensor()*g.gamma[2].tensor())
+PpSzp_gpt = Pp * Szp
 
-def create_bw_seq_pyquda(prop, trafo, origin):
-    """
-    PyQUDA 版构建后向顺序源 (Backward Sequential Source).
-    
-    参数:
-        prop: LatticePropagator
-            输入的前向传播子 (u quark)。
-        origin: list/tuple
-            源坐标，假设格式为 [x, y, z, t] (GPT 风格)。
-        t_insert: int
-            相对于源时间的插入时间偏移量 (t_sink = (t_source + t_insert) % Lt)。
-        pf: list/tuple
-            动量，格式为 [px, py, pz, pt] (即 x, y, z, t)。
-        Cg5, PpSzp: matrix/int
-            用于 up_quark_insertion 的矩阵。
-        latt_info: LatticeInfo
-            格点信息对象。
-            
-    返回:
-        smearing_input: LatticePropagator
-            用于反演的顺序源。
-    """
-    
-    latt_info = prop.latt_info
-    Lt = latt_info.Lt
-    
-    prop = boosted_smearing(trafo, prop, w=width, boost=boost_out)
-
-    # --- 1. 执行重子缩并 (Up Quark Insertion) ---
-    src_seq = up_quark_insertion_pyquda(prop, prop, Cg5, PpSzp)
-    
-    # --- 2. 时间切片 (Time Slicing) ---
-    # origin 格式 [x, y, z, t] -> 时间在 index 3
-    t_source = origin[3] 
-    t_sink = (t_source + t_insert) % Lt
-    
-    # 获取数据副本 (GPU)
-    seq_data = src_seq.data.copy()
-    
-    # 置零非插入时间片
-    times = cp.arange(Lt)
-    mask = (times != t_sink) 
-    seq_data[:, mask] = 0    
-    
-    # --- 3. 创建动量相位 (Momentum Phase) ---
-    # pf: [px, py, pz, pt] (x, y, z, t)
-    # PyQUDA MomentumPhase 期望顺序通常是 [t, z, y, x]
-    # 我们将 pf 映射过去: x->mom[3], y->mom[2], z->mom[1], t->mom[0]
-    
-    # 生成相位
-    mom_phase = MomentumPhase(latt_info).getPhase(pf[:3])
-    
-    # phase_data = mom_phase_obj.data
-    G5 = gamma.gamma(15)
-    
-    smearing_input = contract("jk,wtzyx,wtzyxkiba->wtzyxjiba", G5, mom_phase, seq_data)
-
-    return smearing_input
 
 def down_quark_insertion_pyquda(Q, Gamma, P):
     """
@@ -304,33 +233,75 @@ def up_quark_insertion_pyquda(Qu, Qd, Gamma, P):
     
     return R
 
-init([1, 1, 1, 1], resource_path=".cache")
 
-mass = -0.038888
-csw_r = 1.02868
-csw_t = 1.02868
-xi_0 = 1.0
-nu = 1.0
+def down_quark_insertion_gpt(Q, Gamma, P):
+    #eps_abc eps_a'b'c'Gamma_{beta alpha}Gamma_{beta'alpha'}P_{gamma gamma'}
+    # * ( Q^beta'beta_b'b Q^gamma'gamma_{c'c} -  Q^beta'gamma_b'c Q^gamma'beta_{c'b} )
+    
+    eps = g.epsilon(Q.otype.shape[2])
+    
+    R = g.lattice(Q)
+    
+    PDu = g(g.spin_trace(P*Q))
 
-latt_info = core.LatticeInfo([8, 8, 8, 8], -1, xi_0 / nu)
-dirac = core.getClover(latt_info, mass, 1e-8, 10000, xi_0, csw_r, csw_t)
+    GtDG = g.eval(g.transpose(Gamma)*Q*Gamma)
 
-gauge = io.readNERSCGauge("/home/jinchen/git/lat-software/LatCoding/conf/S8T8/wilson_b6.0")
+    GtDG = g.separate_color(GtDG)
+    PDu = g.separate_color(PDu)
+    
+    GtD = g.eval(g.transpose(Gamma)*Q)
+    PDG = g.eval(P*Q*Gamma)
+    
+    GtD = g.separate_color(GtD)
+    PDG = g.separate_color(PDG)
+    
+    D = {x: g.lattice(GtDG[x]) for x in GtDG}
 
-dirac.loadGauge(gauge)
+    for d in D:
+        D[d][:] = 0
+        
+    for i1, sign1 in eps:
+        for i2, sign2 in eps:
+            D[i1[0], i2[0]] += -sign1 * sign2 * g.transpose((PDu[i2[2], i1[2]] * GtDG[i2[1], i1[1]] - GtD[i2[1],i1[2]] * PDG[i2[2], i1[1]]))
+            
+    g.merge_color(R, D)
+    return R
 
-# same random source as GPT
-point_prop = source.propagator(latt_info, "point", [1,2,1,3])
+#Qlua definition, reproduce the results as Chroma difinition
+def up_quark_insertion_gpt(Qu, Qd, Gamma, P):
 
-propag = core.invertPropagator(dirac, point_prop)
+    eps = g.epsilon(Qu.otype.shape[2])
+    R = g.lattice(Qu)
 
-U_data = cp.zeros((8,8,8,8,3,3), dtype=cp.complex128)
-U_data[..., 0,0] = 1
-U_data[..., 1,1] = 1
-U_data[..., 2,2] = 1
-U_trafo = SimpleNamespace(data=U_data, latt_info=latt_info)
+    Du_sep = g.separate_color(Qu)
+    GDd = g.eval(Gamma * Qd)
+    GDd = g.separate_color(GDd)
 
-smearing_input = create_bw_seq_pyquda(propag, U_trafo, origin=[0,0,0,0])
+    PDu = g.eval(P*Qu)
+    PDu = g.separate_color(PDu)
 
-print(np.shape(smearing_input.get()))
-print(np.linalg.norm(smearing_input.get())**2)
+    # ut
+    DuP = g.eval(Qu * P)
+    DuP = g.separate_color(DuP)
+    TrDuP = g(g.spin_trace(Qu * P))
+    TrDuP = g.separate_color(TrDuP)
+    
+    # s2ds1b
+    GtDG = g.eval(g.transpose(Gamma)*Qd*Gamma)
+    GtDG = g.separate_color(GtDG)
+
+    #sum color indices
+    D = {x: g.lattice(GDd[x]) for x in GDd}
+    for d in D:
+        D[d][:] = 0
+
+    for i1, sign1 in eps:
+        for i2, sign2 in eps:
+            D[i2[2], i1[2]] += -sign1 * sign2 * (P * g.spin_trace(GtDG[i1[1],i2[1]]*g.transpose(Du_sep[i1[0],i2[0]]))
+                                + g.transpose(TrDuP[i1[0],i2[0]] * GtDG[i1[1],i2[1]])
+                                + PDu[i1[0],i2[0]] * g.transpose(GtDG[i1[1],i2[1]])
+                                + g.transpose(GtDG[i1[0],i2[0]]) * DuP[i1[1],i2[1]])
+    
+    g.merge_color(R, D)
+
+    return R

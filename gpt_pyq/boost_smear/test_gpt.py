@@ -2,8 +2,8 @@ import gpt as g
 import numpy as np
 
 # lattice   
-lat = g.grid([8,8,8,8], g.double)
-U = g.convert(g.load("/home/jinchen/git/lat-software/LatCoding/conf/S8T8/wilson_b6.0"), g.double)
+lat = g.grid([8,8,8,32], g.double)
+U = g.convert(g.load("/home/jinchen/git/lat-software/LatCoding/conf/S8T32/wilson_b6.0"), g.double)
 
 U_prime, U_trafo = g.gauge_fix(U, maxiter=1000, prec=1e-2)
 
