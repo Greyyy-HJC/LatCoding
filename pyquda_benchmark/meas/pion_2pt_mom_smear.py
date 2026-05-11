@@ -29,8 +29,8 @@ Lt = 32
 kappa = 0.12575
 mass = 1 / (2 * kappa) - 4
 
-k1 = np.array([0.5,0.5,0.5]) * 2 * np.pi / Ls
-k2 = np.array([0.5,0.5,0.5]) * 2 * np.pi / Ls
+k1 = np.array([0.5,0.5,0.5])
+k2 = np.array([0.5,0.5,0.5])
 rho = 3
 nsteps = 32
 src_pos = [0, 0, 0, 0]
