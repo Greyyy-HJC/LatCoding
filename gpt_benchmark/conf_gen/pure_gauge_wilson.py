@@ -10,8 +10,8 @@ Two parts:
 import gpt as g
 import os
 
-Ls = 32
-Lt = 32
+Ls = 24
+Lt = 24
 
 # grid
 lattice = [Ls, Ls, Ls, Lt]
@@ -66,7 +66,7 @@ if True:
 #! save configs
 U_it = g.load(f"../../conf/S{Ls}T{Lt}/wilson_b6.balance")
 
-for n_conf in range(5):
+for n_conf in range(50):
     for gap in range(40):
         it = n_conf * 40 + gap
 

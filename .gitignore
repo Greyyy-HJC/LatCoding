@@ -1,6 +1,8 @@
 conf/S16T16/
 conf/S16T16_cg/
 conf/S8T32_cg/
+conf/S24T24/
+conf/S24T24_cg/
 conf/S32T32/
 conf/*/wilson_b6.[5-9]
 conf/*/wilson_b6.[1-9][0-9]*
@@ -9,3 +11,5 @@ test/**/*
 
 **/*.h5
 **/*.pkl
+
+GLU_gfix/GLU
