@@ -49,6 +49,7 @@ Turn tasks into verifiable outcomes.
 - Keep code concise and readable.
 - Prefer direct flow in scripts; avoid extra helper functions unless clearly needed.
 - Keep exception handling minimal; only keep checks required by the main runtime path.
+- Do not add compatibility fallbacks for old paths/formats unless explicitly requested; fail fast with explicit errors so misconfigurations are visible.
 - Use repository-root `.venv` for Python dependencies.
 - Keep Python runtime at 3.10 or newer.
 - Reuse existing non-Python software stack from local environment:

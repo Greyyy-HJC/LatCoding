@@ -1,4 +1,7 @@
-# Python >= 3.10
+# Python 3.8 (pinned to the prebuilt GPT/PyQUDA CPython 3.8 ABI).
+# The compiled stack (pyquda, pyquda_utils, cupy, gpt, cgpt) is reused from the
+# existing Python 3.8 environment via `.venv --system-site-packages`, not pip-installed.
+# The pure-Python packages below are also provided by system site-packages.
 numpy
 scipy
 h5py
