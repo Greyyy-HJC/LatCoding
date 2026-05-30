@@ -51,7 +51,7 @@ Turn tasks into verifiable outcomes.
 - Keep exception handling minimal; only keep checks required by the main runtime path.
 - Do not add compatibility fallbacks for old paths/formats unless explicitly requested; fail fast with explicit errors so misconfigurations are visible.
 - Use repository-root `.venv` for Python dependencies.
-- Keep Python runtime at 3.10 or newer.
+- Keep Python runtime at 3.8 or newer.
 - Reuse existing non-Python software stack from local environment:
   - `source /home/jinchen/env/gpt.env`
   - `export QUDA_PATH=/home/jinchen/git/lat-software/quda/build`
