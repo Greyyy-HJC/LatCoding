@@ -21,6 +21,8 @@ temp/
 glu/benchmark/GLU
 configs/S16T16/
 configs/S16T16_cg/
+configs/S16T16_cg_ipg/
+configs/S16T16_itpg/
 configs/S8T32_cg/
 configs/S24T24/
 configs/S24T24_cg/
