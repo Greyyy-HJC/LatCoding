@@ -27,17 +27,17 @@ The repository package deliberately uses the `latcoding` namespace so it does no
 
 Python is managed with repository-root `.venv` (Python 3.8, pinned to match the prebuilt GPT/PyQUDA stack).
 
-The compiled stack (`pyquda`, `cupy`, `cgpt.so`, and `pyquda_plugins.pycontract`) is built for CPython 3.8 ABI, so `.venv` is created from the existing Python 3.8 interpreter with system site-packages to reuse those artifacts without rebuilding any non-Python software:
+The compiled stack (`pyquda`, `cupy`, `cgpt.so`, and `pyquda_plugins.pycontract`) is built for CPython 3.8 ABI, so `.venv` should be created from a Python 3.8 interpreter with system site-packages enabled to reuse those artifacts without rebuilding any non-Python software:
 
 ```bash
-/home/jinchen/miniconda3/envs/pygpt/bin/python -m venv .venv --system-site-packages
+<python-3.8-interpreter> -m venv .venv --system-site-packages
 ```
 
 `gpt` and `cgpt` are made importable via `.venv/lib/python3.8/site-packages/gpt.pth`, which mirrors `gpt/lib/cgpt/build/source.sh`.
 
-Non-Python software is reused from existing local installations:
-- `source /home/jinchen/env/gpt.env`
-- `export QUDA_PATH=/home/jinchen/git/lat-software/quda/build`
+Non-Python software is reused from existing local installations. Set these paths for the machine you are running on:
+- `source <path-to-gpt-env>`
+- `export QUDA_PATH=<path-to-quda-build>`
 
 The Python packages used by current scripts are provided by the system site-packages visible to `.venv`; do not reinstall GPT/PyQUDA/QUDA from this repository. The current environment expects:
 

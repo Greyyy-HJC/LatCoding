@@ -144,6 +144,11 @@ def boosted_smearing(
     boost: Sequence[float],
 ):
     t0 = perf_counter()
+    if not isinstance(src, (LatticeFermion, LatticePropagator)):
+        raise TypeError(f"boosted_smearing: unsupported src type: {type(src)}")
+    if float(w) == 0.0:
+        mpi_timer_print(src.latt_info, "boosted_smearing", perf_counter() - t0, field=type(src).__name__, width=w, boost=boost, skipped="width=0")
+        return src
     if isinstance(src, LatticeFermion):
         out = _boosted_smearing_fermion(src, w=w, boost=boost)
         mpi_timer_print(src.latt_info, "boosted_smearing", perf_counter() - t0, field="LatticeFermion", width=w, boost=boost)
@@ -157,4 +162,3 @@ def boosted_smearing(
                 out.setFermion(f_sm, s, c)
         mpi_timer_print(src.latt_info, "boosted_smearing", perf_counter() - t0, field="LatticePropagator", width=w, boost=boost)
         return out
-    raise TypeError(f"boosted_smearing: unsupported src type: {type(src)}")

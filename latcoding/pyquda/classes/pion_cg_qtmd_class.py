@@ -134,12 +134,7 @@ from latcoding.pyquda.utils.pion_utils import (
     my_gammas,
     source_gamma_stack,
 )
-
-
-def save_c2pt_hdf5(*args, **kwargs):
-    raise NotImplementedError(
-        "This draft example needs an HDF5 writer that has not been migrated into latcoding yet."
-    )
+from latcoding.pyquda.utils.io_corr import save_c2pt_hdf5
 
 
 class pion_TMD:

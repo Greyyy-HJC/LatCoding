@@ -3,12 +3,7 @@ import numpy as np
 from pyquda_utils import core, gamma
 from latcoding.pyquda.utils.boosted_smearing import boosted_smearing
 from latcoding.pyquda.utils.tools import _get_xp_from_array, mpi_print, _asarray_on_queue
-
-
-def save_c2pt_hdf5(*args, **kwargs):
-    raise NotImplementedError(
-        "This draft example needs an HDF5 writer that has not been migrated into latcoding yet."
-    )
+from latcoding.pyquda.utils.io_corr import save_c2pt_hdf5
 
 
 my_gammas = ["5", "T", "T5", "X", "X5", "Y", "Y5", "Z", "Z5", "I", "SXT", "SXY", "SXZ", "SYT", "SYZ", "SZT"]
@@ -58,7 +53,7 @@ class pion_TMDWF_measurement():
         self.neg_boost = parameters["neg_boost"]
         
     #! PyQUDA: contract 2pt TMD
-    def contract_2pt_pion(self, latt_info, prop_f, prop_b, phases, tag, src_mode="fixed_g5"): 
+    def contract_2pt_pion(self, latt_info, prop_f, prop_b, phases, tag, src_mode="fixed", pion_interpolator=G5): 
         
         mpi_print(latt_info, "Begin sink smearing")
         prop_f = boosted_smearing(prop_f, w=self.width, boost=self.pos_boost)
@@ -72,11 +67,12 @@ class pion_TMDWF_measurement():
         pyquda_gamma_ls = [_gamma_on_backend(gamma_pyq, xp, prop_f.data) for gamma_pyq in my_pyquda_gammas]
 
         # Source Dirac structure:
-        # - fixed_g5: preserve the original pion definition
+        # - fixed: use one fixed pion interpolator on source
         # - same_as_sink: use the same Gamma_g on source and sink
         # - dagger_of_sink: use gamma5 * Gamma_g^\dagger * gamma5 on source
-        if src_mode == "fixed_g5":
-            src_gamma_ls = [G5_backend] * n_gamma
+        if src_mode == "fixed":
+            pion_interpolator_backend = _gamma_on_backend(pion_interpolator, xp, prop_f.data)
+            src_gamma_ls = [pion_interpolator_backend] * n_gamma
         elif src_mode == "same_as_sink":
             src_gamma_ls = pyquda_gamma_ls
         elif src_mode == "dagger_of_sink":
@@ -87,7 +83,7 @@ class pion_TMDWF_measurement():
         else:
             raise ValueError(
                 f"Invalid src_mode: {src_mode}. "
-                "Expected one of ['fixed_g5', 'same_as_sink', 'dagger_of_sink']."
+                "Expected one of ['fixed', 'same_as_sink', 'dagger_of_sink']."
             )
 
         phases = _asarray_on_queue(phases, xp, prop_f.data)

@@ -270,8 +270,8 @@ def save_emt_gluon_1pt_hdf5(tag, Tmunu_t, attrs=None):
 # Two-point and qTMD HDF5 writers
 # -----------------------------------------------------------------------------
 
-# Save the standard baryon-style two-point function with source-time rolling.
-def save_proton_c2pt_hdf5(corr, tag, gammalist, plist):
+# Save the standard two-point function with source-time rolling.
+def save_c2pt_hdf5(corr, tag, gammalist, plist):
 
     src_match = None
     for part in tag.split("."):
@@ -283,8 +283,7 @@ def save_proton_c2pt_hdf5(corr, tag, gammalist, plist):
     roll = -int(src_match.group(1))
 
     save_h5 = tag + ".h5"
-    ensure_parent_dir(save_h5)
-    f = h5py.File(save_h5, 'w')
+    f = _prepare_h5_file(save_h5)
     sm = f.create_group("SS")
     for ig, gm in enumerate(gammalist):
         g = sm.create_group(gm)
@@ -363,8 +362,7 @@ def save_disconnected_qTMD_1pt_hdf5(tag, loop_pervec, loop_avg, gammalist, plist
 def save_pion_EMFF_hdf5_noRoll(corr, tag, gammalist, qlist, tsep, latt_info):
 
     save_h5 = tag + ".h5"
-    ensure_parent_dir(save_h5)
-    f = h5py.File(save_h5, 'w')
+    f = _prepare_h5_file(save_h5)
 
     if latt_info.mpi_rank == 0:
         print(f"no roll")
@@ -386,8 +384,7 @@ def save_pion_EMFF_hdf5_noRoll(corr, tag, gammalist, qlist, tsep, latt_info):
 # Save the pion soft-factor four-point correlator.
 def save_pion_soft_factor_hdf5_noRoll(corr, tag, pion_src_keys, pion_sink_keys, gamma1_keys, gamma2_keys, bT_dir, bT_length, tseplist, latt_info):
     save_h5 = tag + ".h5"
-    ensure_parent_dir(save_h5)
-    f = h5py.File(save_h5, 'w')
+    f = _prepare_h5_file(save_h5)
 
     bT_list = ["bX", "bY", "bZ"]
     if latt_info.mpi_rank == 0:
@@ -410,8 +407,7 @@ def save_pion_soft_factor_hdf5_noRoll(corr, tag, pion_src_keys, pion_sink_keys, 
 # Save the wall-source qTMDWF diagnostic used by the pion soft-factor workflow.
 def save_pion_soft_factor_qTMDWF_hdf5_noRoll(corr, tag, src_key, momentum, bT_dir, bT_length, bz_length, latt_info):
     save_h5 = tag + ".h5"
-    ensure_parent_dir(save_h5)
-    f = h5py.File(save_h5, 'w')
+    f = _prepare_h5_file(save_h5)
 
     bT_list = ["b_X", "b_Y", "b_Z"]
     if latt_info.mpi_rank == 0:
@@ -435,8 +431,7 @@ def save_pion_soft_factor_qTMDWF_hdf5_noRoll(corr, tag, src_key, momentum, bT_di
 # Save the wall-to-wall two-point diagnostic used by the pion soft-factor workflow.
 def save_pion_soft_factor_c2pt_hdf5_noRoll(corr, tag, src_key, sink_keys, momentum, latt_info):
     save_h5 = tag + ".h5"
-    ensure_parent_dir(save_h5)
-    f = h5py.File(save_h5, 'w')
+    f = _prepare_h5_file(save_h5)
 
     if latt_info.mpi_rank == 0:
         print(f"no roll")
@@ -460,7 +455,7 @@ def save_qTMDWF_hdf5_noRoll(corr, tag, gammalist, plist, W_index_list):
     bT_list = ['b_X', 'b_Y']
 
     save_h5 = tag + ".h5"
-    f = h5py.File(save_h5, 'w')
+    f = _prepare_h5_file(save_h5)
 
     sm = f.require_group("SP")
     for ig, gm in enumerate(gammalist):

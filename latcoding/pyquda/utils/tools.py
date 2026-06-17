@@ -35,6 +35,19 @@ def _asarray_on_queue(val, xp, ref_arr):
     # 2. Fallback for standard numpy/cupy or if ref_arr has no queue info
     return xp.asarray(val)
 
+
+def gamma_matrix_to_backend(gamma_like, xp, ref_arr=None, dtype=None):
+    """Convert a PyQUDA gamma object or matrix to an array on the requested backend."""
+    if hasattr(gamma_like, "matrix"):
+        gamma_like = gamma_like.matrix
+    if ref_arr is not None:
+        gamma_arr = _asarray_on_queue(gamma_like, xp, ref_arr)
+    else:
+        gamma_arr = xp.asarray(gamma_like)
+    if dtype is not None:
+        gamma_arr = gamma_arr.astype(dtype, copy=False)
+    return gamma_arr
+
 def mpi_print(latt_info, message):
     if latt_info.mpi_rank == 0:
         print(message)
