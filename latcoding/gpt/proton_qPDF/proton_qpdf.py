@@ -2,7 +2,7 @@ import gpt as g
 import numpy as np
 import h5py
 from pathlib import Path
-from proton_qPDF_class import proton_qPDF
+from latcoding.gpt.proton_qPDF.proton_qPDF_class import proton_qPDF
 
 """
 ================================================================================
@@ -32,7 +32,7 @@ Output:
 """
 
 # Import gamma structures from the PDF class
-from proton_qPDF_class import my_gammas
+from latcoding.gpt.proton_qPDF.proton_qPDF_class import my_gammas
 
 def save_correlator_hdf5(results_dict, filepath):
     """Save correlation data to HDF5 file with hierarchical structure

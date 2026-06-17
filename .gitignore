@@ -18,14 +18,11 @@ temp/
 *.npy
 *.npz
 *.log
-glu/benchmark/GLU
+examples/glu/gauge_fixing/GLU
 configs/S16T16/
-configs/S16T16_cg/
-configs/S16T16_cg_ipg/
-configs/S16T16_itpg/
+configs/S16T16_*/
 configs/S8T32_cg/
 configs/S24T24/
-configs/S24T24_cg/
 configs/S24T24_*/
 configs/S32T32/
 configs/S32T32_*/

@@ -1,5 +1,20 @@
 # PROJECT_LOG.md
 
+## 2026-06-17
+
+- Updated GPT measurement examples to use repository-root `configs/` paths and script-anchored dump output paths, matching `examples/gpt/conf_gen/pure_gauge_wilson.py`.
+- Moved the pion CG qTMD/qTMDWF class modules from `examples/pyquda/measurement/` into `latcoding/pyquda/classes/` as importable package modules.
+- Removed GI qTMD/PDF paths from `latcoding/pyquda/classes/pion_cg_qtmd_class.py`, leaving only CG qTMD/PDF contractions in that example.
+- Removed `AGENTS.md`, `CLAUDE.md`, `SPEC.md`, `requirements.txt`, and the temporary `setup.py`; current structure and environment notes now live in `README.md` plus `pyproject.toml`.
+- Flattened the follow-up layout by removing `examples/pyquda/drafts/`, removing the `addons/` layer under `latcoding/gpt` and `latcoding/pyquda`, and restoring `examples/glu/gauge_fixing/GLU` as a local symlink to `/home/jinchen/local/glu/bin/GLU`.
+- Reorganized the repository around the installable `latcoding` package to avoid shadowing upstream `gpt` and `pyquda` imports.
+- Moved reusable GPT addon modules into `latcoding/gpt/` and PyQUDA utility modules into `latcoding/pyquda/utils/`.
+- Moved GPT conf-generation and GLU gauge-fixing scripts into `examples/`; moved current PyQUDA qTMD measurement files into `examples/pyquda/measurement/`.
+- Moved consistency placeholder into `checks/consistency/` and removed obsolete top-level `gpt/` and `pyquda/` placeholders.
+- Added `pyproject.toml` for editable installs.
+- Upgraded repository-root `.venv` pip from 21.1.1 to 25.0.1, removed the temporary `setup.py` compatibility shim, and folded the former `requirements.txt` environment notes into `README.md`.
+- Updated docs for the package/examples/checks layout.
+
 ## 2026-05-30
 
 - Reorganized repository from `software/` wrapper layout to root-level `gpt/`, `pyquda/`, and `glu/` software directories with standardized `benchmarks/`, `tests/`, and `addons/` subdirectories.

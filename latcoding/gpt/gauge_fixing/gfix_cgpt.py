@@ -5,7 +5,7 @@ import argparse
 
 import gpt as g
 
-from coulomb_gauge import coulomb
+from latcoding.gpt.gauge_fixing.coulomb_gauge import coulomb
 
 
 def _default_paths() -> tuple[Path, Path, Path]:
