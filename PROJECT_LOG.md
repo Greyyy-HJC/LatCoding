@@ -2,6 +2,7 @@
 
 ## 2026-06-17
 
+- Updated `examples/pyquda/measurement/pion_2pt.py` to use repository-root `configs/`, repository-root `.cache/pyquda`, and script-anchored plot output paths.
 - Updated GPT measurement examples to use repository-root `configs/` paths and script-anchored dump output paths, matching `examples/gpt/conf_gen/pure_gauge_wilson.py`.
 - Moved the pion CG qTMD/qTMDWF class modules from `examples/pyquda/measurement/` into `latcoding/pyquda/classes/` as importable package modules.
 - Removed GI qTMD/PDF paths from `latcoding/pyquda/classes/pion_cg_qtmd_class.py`, leaving only CG qTMD/PDF contractions in that example.

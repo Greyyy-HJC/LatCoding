@@ -3,6 +3,7 @@
 __pycache__/
 .DS_Store
 temp/
+.cache/
 
 .pytest_cache/
 .mypy_cache/
@@ -32,3 +33,5 @@ configs/*/wilson_b6.[1-9][0-9]*
 build/
 dist/
 *.egg-info/
+
+examples/artifacts/
