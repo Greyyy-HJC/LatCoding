@@ -1,5 +1,4 @@
 import argparse
-import os
 import time
 from pathlib import Path
 
@@ -9,26 +8,33 @@ from pyquda import getMPIComm, init
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--config_num", type=int, default=int(os.environ.get("PION_TMD_CONFIG_NUM", 0)))
-parser.add_argument("--mpi_geometry", type=str, default=os.environ.get("PION_TMD_MPI_GEOMETRY", "1.1.1.1"))
-parser.add_argument("--gauge_path", type=str, default=os.environ.get("PION_TMD_GAUGE_PATH", ""))
-parser.add_argument("--data_dir", type=str, default=os.environ.get("PION_TMD_DATA_DIR", ""))
-parser.add_argument("--num_src", type=int, default=int(os.environ.get("PION_TMD_NUM_SRC", 1)))
-parser.add_argument("--qmax", type=int, default=int(os.environ.get("PION_TMD_QMAX", 1)))
-parser.add_argument("--b_z", type=int, default=int(os.environ.get("PION_TMD_BZ", 1)))
-parser.add_argument("--b_T", type=int, default=int(os.environ.get("PION_TMD_BT", 1)))
-parser.add_argument("--t_insert", type=int, default=int(os.environ.get("PION_TMD_T_INSERT", 2)))
-parser.add_argument("--width", type=float, default=float(os.environ.get("PION_TMD_WIDTH", 1.0)))
-parser.add_argument("--src_interpolator", type=str, default=os.environ.get("PION_TMD_SRC_INTERPOLATOR", "fixed_g5"))
-parser.add_argument("--sink_interpolator", type=str, default=os.environ.get("PION_TMD_SINK_INTERPOLATOR", "5"))
+parser.add_argument("--config_num", type=int, default=0, help="Configuration number")
+parser.add_argument("--tsep", type=int, default=4, help="Source-sink separation")
+parser.add_argument("--mpi_geometry", type=str, default="1.1.1.1", help="MPI geometry")
 args, unknown = parser.parse_known_args()
-
+conf = args.config_num
 mpi_geometry = [int(i) for i in args.mpi_geometry.split(".")]
+
+# Global parameters
+Ls = 8
+Lt = 32
+repo_root = Path(__file__).resolve().parents[3]
+data_dir = repo_root / "examples/artifacts/data"
+gauge_path = repo_root / f"configs/S{Ls}T{Lt}_cg/wilson_b6.cg.1e-14.{conf}"
+lat_tag = f"S{Ls}T{Lt}_cg"
+sm_tag = f"S{Ls}T{Lt}_qtmd"
+
+
+# --------------------------
+# Initiate QUDA
+# --------------------------
+
 init(mpi_geometry, enable_mps=True)
 
-from pyquda_utils import core, gamma, io, phase, source
+from pyquda_utils import core, io, source
 from pyquda_utils.phase import MomentumPhase
 
+from latcoding.pyquda.classes.pion_cg_qtmd_class import my_gammas, pion_TMD
 from latcoding.pyquda.utils.boosted_smearing import boosted_smearing
 from latcoding.pyquda.utils.bw_seq_pyquda import create_meson_bw_seq_pyquda
 from latcoding.pyquda.utils.io_corr import (
@@ -37,8 +43,55 @@ from latcoding.pyquda.utils.io_corr import (
     get_sample_log_tag,
     save_qTMD_pion_hdf5_noRoll,
 )
-from latcoding.pyquda.classes.pion_cg_qtmd_class import my_gammas, pion_TMD
+from latcoding.pyquda.utils.pion_utils import gamma_from_label
 from latcoding.pyquda.utils.tools import mpi_print, srcLoc_distri_eq
+
+
+# --------------------------
+# Setup parameters
+# --------------------------
+
+parameters = {
+    "eta": [0],
+    "b_T": 0,
+    "b_z": 8,
+    # Momenta are integer Fourier modes: p_i = 2*pi*n_i/L_i.  The fourth
+    # component is kept for metadata compatibility; only x, y, z are used here.
+    # qext is the qTMD insertion momentum transfer q = p_f - p_i.  It is passed
+    # directly to MomentumPhase, giving exp(+i*q.(x-x_src)) at the insertion.
+    # For b_T = 0, the resulting straight-z CG qTMD data are also the CG qPDF.
+    "qext": [[0, 0, 0, 0]],
+    # pf is the fixed final-pion (sink) momentum used to build the sequential
+    # source; the later conjugation produces the usual exp(-i*p_f.(y-x_src)).
+    "pf": [0, 0, 0, 0],
+    # p_2pt is the pion momentum measured by the two-point correlator.  The
+    # script negates these modes below, so its projection is exp(-i*p.(x-x_src)).
+    "p_2pt": [[0, 0, 0, 0]],
+    "width": 0,
+    "pos_boost": [0, 0, 0],
+    "neg_boost": [0, 0, 0],
+    "t_insert": args.tsep,
+    "save_propagators": False,
+}
+measurement = pion_TMD(parameters)
+compute_2pt = True
+pt2_src_mode = "fixed"
+pt2_src = "5"
+pt3_src = "5"
+pt3_snk = "5"
+n_src = 1
+
+if pt2_src_mode == "fixed":
+    pt2_src_gamma = pt2_src
+    pt2_src_tag = f"fixed_src{pt2_src}"
+elif pt2_src_mode in {"same_as_sink", "dagger_of_sink"}:
+    pt2_src_gamma = pt2_src_mode
+    pt2_src_tag = pt2_src_mode
+else:
+    raise ValueError(
+        f"Invalid pt2_src_mode: {pt2_src_mode}. "
+        "Expected one of ['fixed', 'same_as_sink', 'dagger_of_sink']."
+    )
 
 
 def sync_backend_array(arr):
@@ -50,228 +103,214 @@ def sync_backend_array(arr):
         queue.wait()
 
 
-def gamma_from_label(label):
-    gamma_map = {
-        "5": 15,
-        "T": 8,
-        "T5": 7,
-        "X": 1,
-        "X5": 14,
-        "Y": 2,
-        "Y5": 13,
-        "Z": 4,
-        "Z5": 11,
-        "I": 0,
-        "SXT": 9,
-        "SXY": 3,
-        "SXZ": 5,
-        "SYT": 10,
-        "SYZ": 6,
-        "SZT": 12,
-    }
-    if label not in gamma_map:
-        raise ValueError(f"Invalid sink interpolator: {label}")
-    return gamma.gamma(gamma_map[label])
+def prepare_three_point(corr, pos, latt_info):
+    if latt_info.mpi_rank == 0:
+        corr = np.roll(corr, -pos[3], axis=-1)
+        corr = corr[:, :, :, : parameters["t_insert"] + 2]
+        corr = np.transpose(corr, (0, 2, 1, 3))
+    return getMPIComm().bcast(corr, root=0)
 
 
-software_root = Path(os.environ.get("SOFTWARE_ROOT", "/global/cfs/cdirs/m3760/xgao/software"))
-script_dir = Path(__file__).resolve().parent
-data_dir = Path(args.data_dir) if args.data_dir else script_dir / "data"
-gauge_path = args.gauge_path or str(software_root / "Pyquda_Measurement/test_gauge/S8T32_wilson_b6.cg.1e-08.0")
-lat_tag = os.environ.get("PION_TMD_LAT_TAG", "S8T32")
-sm_tag = os.environ.get("PION_TMD_SM_TAG", f"1HYP_GSRC_W{args.width:g}_k0_{args.sink_interpolator}")
-conf = args.config_num
+def save_three_point(corr, pos, correlator_tag, momenta, wilson_indices, latt_info):
+    corr = prepare_three_point(corr, pos, latt_info)
+    pf = parameters["pf"]
+    pf_tag = f"PX{pf[0]}PY{pf[1]}PZ{pf[2]}dt{parameters['t_insert']}"
+    rank = latt_info.mpi_rank
+    size = getMPIComm().Get_size()
 
-q_range = range(-args.qmax, args.qmax + 1)
-qext = [[x, y, 0, 0] for x in q_range for y in q_range]
-qext_PDF = [[x, y, z, 0] for x in q_range for y in q_range for z in q_range]
-p_2pt = [[x, y, z, 0] for x in q_range for y in q_range for z in q_range]
-parameters = {
-    "eta": [0],
-    "b_z": args.b_z,
-    "b_T": args.b_T,
-    "qext": qext,
-    "qext_PDF": qext_PDF,
-    "pf": [0, 0, 0, 0],
-    "p_2pt": p_2pt,
-    "pos_boost": [0, 0, 0],
-    "neg_boost": [0, 0, 0],
-    "width": args.width,
-    "t_insert": args.t_insert,
-    "save_propagators": False,
-}
-pf = parameters["pf"]
-pf_tag = f"PX{pf[0]}PY{pf[1]}PZ{pf[2]}dt{parameters['t_insert']}"
-measurement = pion_TMD(parameters)
+    for gamma_idx in range(rank, len(my_gammas), size):
+        insertion_gamma = my_gammas[gamma_idx]
+        tag = get_qTMD_file_tag(
+            str(data_dir),
+            lat_tag,
+            conf,
+            correlator_tag,
+            pos,
+            f"{sm_tag}.src{pt3_src}.snk{pt3_snk}."
+            f"{pf_tag}.O{insertion_gamma}",
+        )
+        mpi_print(latt_info, f"Saving {correlator_tag} insertion gamma {insertion_gamma}: {tag}")
+        save_qTMD_pion_hdf5_noRoll(
+            corr[:, :, gamma_idx : gamma_idx + 1, :],
+            tag,
+            [insertion_gamma],
+            momenta,
+            wilson_indices,
+            parameters["t_insert"],
+            latt_info,
+        )
 
-if getMPIComm().Get_rank() == 0:
-    (data_dir / "sample_log_qtmd").mkdir(parents=True, exist_ok=True)
-    (data_dir / "c2pt").mkdir(parents=True, exist_ok=True)
-    (data_dir / "qTMD").mkdir(parents=True, exist_ok=True)
-getMPIComm().Barrier()
 
-if getMPIComm().Get_rank() == 0:
-    print(f"--gauge_path {gauge_path}")
-    print(f"--data_dir {data_dir}")
-    print(f"--config_num {conf}")
-    print(f"--mpi_geometry {args.mpi_geometry}")
+# --------------------------
+# Load gauge and create inverter
+# --------------------------
 
-gauge = io.readNERSCGauge(gauge_path.format(conf=conf))
-gauge.hypSmear(1, 0.75, 0.6, 0.3, 4)
-gauge.latt_info.t_boundary = -1
-latt_info = gauge.latt_info
-mpi_print(latt_info, f"DEBUG plaquette U_hyp: {gauge.plaquette()}")
-
+L = [Ls, Ls, Ls, Lt]
 xi_0, nu = 1.0, 1.0
-mass = float(os.environ.get("PION_TMD_MASS", 0.236))
-csw_r = float(os.environ.get("PION_TMD_CSW", 1.0372))
-csw_t = csw_r
-tol = float(os.environ.get("PION_TMD_TOL", 1e-15))
-maxiter = int(os.environ.get("PION_TMD_MAXITER", 300))
-multigrid = [[max(1, latt_info.global_size[0] // 1), max(1, latt_info.global_size[1] // 1), max(1, latt_info.global_size[2] // 2), max(1, latt_info.global_size[3] // 8)]]
+mass = -0.049
+csw_r = 1.0372
+csw_t = 1.0372
+multigrid = None
+latt_info = core.LatticeInfo(L, -1, xi_0 / nu)
 
-dirac = core.getDirac(latt_info, mass, tol, maxiter, xi_0, csw_r, csw_t, multigrid)
+gauge = io.readNERSCGauge(str(gauge_path))
+# gauge.hypSmear(1, 0.75, 0.6, 0.3, -1)
+
+mpi_print(latt_info, f"--gauge_path {gauge_path}")
+mpi_print(latt_info, f"--data_dir {data_dir}")
+mpi_print(latt_info, f"--lat_tag {lat_tag}")
+mpi_print(latt_info, f"--sm_tag {sm_tag}")
+mpi_print(latt_info, f"--config_num {conf}")
+mpi_print(latt_info, f"--mpi_geometry {mpi_geometry}")
+mpi_print(latt_info, f"--plaquette U: {gauge.plaquette()}")
+
+dirac = core.getClover(latt_info, mass, 1e-10, 10000, xi_0, csw_r, csw_t, multigrid)
 dirac.loadGauge(gauge)
 
-L = latt_info.global_size
-src_shift = np.array([0, 0, 0, 0])
+
+# --------------------------
+# Setup source positions and output directories
+# --------------------------
+
+src_shift = np.array([7, 11, 13, 23])
 src_origin = np.array([int(conf) % L[i] for i in range(4)]) + src_shift
-src_positions = srcLoc_distri_eq(L, src_origin)[: args.num_src]
+src_positions = srcLoc_distri_eq(L, src_origin)[:n_src]
 
-sample_log_file = data_dir / "sample_log_qtmd" / f"{conf}_{sm_tag}_{pf_tag}"
+pf = parameters["pf"]
+pf_tag = f"PX{pf[0]}PY{pf[1]}PZ{pf[2]}dt{parameters['t_insert']}"
+sample_log_file = data_dir / "sample_log" / f"TMD_{sm_tag}_{conf}_{pf_tag}"
 if latt_info.mpi_rank == 0:
+    sample_log_file.parent.mkdir(parents=True, exist_ok=True)
+    (data_dir / "c2pt").mkdir(parents=True, exist_ok=True)
+    (data_dir / "qTMD").mkdir(parents=True, exist_ok=True)
     sample_log_file.touch(exist_ok=True)
+getMPIComm().Barrier()
 
-sink_gamma = gamma_from_label(args.sink_interpolator)
+pt3_snk_gamma = gamma_from_label(pt3_snk)
+
+
+# --------------------------
+# Start measurements
+# --------------------------
 
 for pos in src_positions:
-    t0_pos = time.time()
-    sample_log_tag = get_sample_log_tag(str(conf), pos, f"{sm_tag}_{pf_tag}")
-    mpi_print(latt_info, f"START: {sample_log_tag}")
+    source_start = time.time()
+    sample_log_tag = get_sample_log_tag("ex", pos, f"{sm_tag}.{pf_tag}")
+    mpi_print(latt_info, f"Contraction START: {sample_log_tag}")
+
+    # Forward propagators for the quark and antiquark source smearings
+    t0 = time.time()
+    src_point = source.propagator(latt_info, "point", pos)
+    src_pos = boosted_smearing(
+        src_point,
+        w=parameters["width"],
+        boost=parameters["pos_boost"],
+    )
+    same_source_smearing = parameters["width"] == 0 or np.array_equal(
+        parameters["pos_boost"],
+        parameters["neg_boost"],
+    )
+    src_neg = None
+    if not same_source_smearing:
+        src_neg = boosted_smearing(
+            src_point,
+            w=parameters["width"],
+            boost=parameters["neg_boost"],
+        )
+    mpi_print(latt_info, f"TIME PyQUDA: Generating boosted sources {time.time() - t0}s")
 
     t0 = time.time()
-    srcD = source.propagator(latt_info, "point", pos)
-    srcDp = boosted_smearing(srcD, w=parameters["width"], boost=parameters["pos_boost"])
-    mpi_print(latt_info, f"TIME PyQUDA: Generating boosted source {time.time() - t0}s")
+    prop_pos = core.invertPropagator(dirac, src_pos, 1, 0)
+    if same_source_smearing:
+        prop_neg = prop_pos
+        inversion_count = 1
+    else:
+        prop_neg = core.invertPropagator(dirac, src_neg, 1, 0)
+        inversion_count = 2
+    mpi_print(
+        latt_info,
+        f"TIME PyQUDA: Forward propagator inversion x{inversion_count} {time.time() - t0}s",
+    )
 
-    t0 = time.time()
-    prop_fw = core.invertPropagator(dirac, srcDp, 1, 0)
-    mpi_print(latt_info, f"TIME PyQUDA: Forward propagator inversion {time.time() - t0}s")
+    if compute_2pt:
+        t0 = time.time()
+        p_2pt_xyz = [[-p[0], -p[1], -p[2]] for p in parameters["p_2pt"]]
+        phases_2pt = MomentumPhase(latt_info).getPhases(p_2pt_xyz, x0=pos)
+        c2_tag = get_c2pt_file_tag(
+            str(data_dir),
+            lat_tag,
+            conf,
+            "CG.ex",
+            pos,
+            f"{sm_tag}.{pt2_src_tag}",
+        )
+        measurement.contract_2pt_pion(
+            latt_info,
+            prop_pos,
+            prop_neg,
+            phases_2pt,
+            c2_tag,
+            src_gamma=pt2_src_gamma,
+        )
+        mpi_print(latt_info, f"TIME PyQUDA: Pion 2pt contraction {time.time() - t0}s")
+    else:
+        mpi_print(latt_info, "SKIP: Pion 2pt contraction")
 
+    # Fixed-sink sequential propagator
     t0 = time.time()
-    c2_tag = get_c2pt_file_tag(str(data_dir), lat_tag, conf, "CG.ex", pos, sm_tag)
-    p_2pt_xyz = [[-v[0], -v[1], -v[2]] for v in parameters["p_2pt"]]
-    phases_2pt = MomentumPhase(latt_info).getPhases(p_2pt_xyz, x0=pos)
-    measurement.contract_2pt_pion(latt_info, prop_fw, prop_fw, phases_2pt, c2_tag, src_gamma=args.src_interpolator)
-    mpi_print(latt_info, f"TIME PyQUDA: Pion 2pt contraction {time.time() - t0}s")
-
-    t0 = time.time()
-    prop_sink_smeared = boosted_smearing(prop_fw.copy(), w=parameters["width"], boost=parameters["neg_boost"])
+    prop_sink_smeared = boosted_smearing(
+        prop_neg.copy(),
+        w=parameters["width"],
+        boost=parameters["neg_boost"],
+    )
     seq_bw_prop = create_meson_bw_seq_pyquda(
         dirac,
         prop_sink_smeared,
         pos,
         parameters["pf"],
         parameters["t_insert"],
-        sink_gamma,
+        pt3_snk_gamma,
         parameters["width"],
         parameters["pos_boost"],
     )
-    mpi_print(latt_info, f"TIME PyQUDA: Pion meson sequential propagator {time.time() - t0}s")
+    mpi_print(latt_info, f"TIME PyQUDA: Pion sequential propagator {time.time() - t0}s")
 
-    qext_xyz = [[v[0], v[1], v[2]] for v in parameters["qext"]]
-    phases_TMD = phase.MomentumPhase(latt_info).getPhases(qext_xyz, pos)
-    qext_pdf_xyz = [[v[0], v[1], v[2]] for v in parameters["qext_PDF"]]
-    phases_PDF = MomentumPhase(latt_info).getPhases(qext_pdf_xyz, x0=pos)
-    W_index_list_CG_dir0, W_index_list_CG_dir1 = measurement.create_TMD_Wilsonline_index_list_CG()
-    W_index_list_CG = W_index_list_CG_dir0 + W_index_list_CG_dir1
-    W_index_list_PDF = measurement.create_PDF_Wilsonline_index_list()
+    qext_xyz = [[q[0], q[1], q[2]] for q in parameters["qext"]]
+    phases_TMD = MomentumPhase(latt_info).getPhases(qext_xyz, x0=pos)
 
+    wilson_dir0, wilson_dir1 = measurement.create_TMD_Wilsonline_index_list_CG()
+    wilson_TMD = wilson_dir0 + wilson_dir1
+
+    # CG qTMD without gauge links; its b_T=0 subset is the CG qPDF.
     t0 = time.time()
     pion_TMDs = measurement.contract_qTMD_CG(
         latt_info,
-        prop_fw,
+        prop_pos,
         seq_bw_prop,
         phases_TMD,
-        W_index_list_CG_dir0,
-        W_index_list_CG_dir1,
-        src_gamma=args.src_interpolator,
+        wilson_dir0,
+        wilson_dir1,
+        src_gamma=pt3_src,
     )
-    mpi_print(latt_info, f"contract_TMD over: pion_TMDs.shape {np.shape(pion_TMDs)} {time.time() - t0}s")
+    mpi_print(
+        latt_info,
+        f"TIME CG qTMD: src{pt3_src}.snk{pt3_snk} "
+        f"shape {np.shape(pion_TMDs)} {time.time() - t0}s",
+    )
+    save_three_point(
+        pion_TMDs,
+        pos,
+        "CG.ex",
+        parameters["qext"],
+        wilson_TMD,
+        latt_info,
+    )
+    del pion_TMDs
 
+    sync_backend_array(prop_pos.data)
+    if prop_neg is not prop_pos:
+        sync_backend_array(prop_neg.data)
     if latt_info.mpi_rank == 0:
-        pion_TMDs = np.roll(pion_TMDs, -pos[3], axis=-1)
-        pion_TMDs = pion_TMDs[:, :, :, : parameters["t_insert"] + 2]
-        pion_TMDs = np.transpose(pion_TMDs, (0, 2, 1, 3))
-    pion_TMDs = getMPIComm().bcast(pion_TMDs, root=0)
-
-    tasks = list(range(len(my_gammas)))
-    rank = latt_info.mpi_rank
-    size = getMPIComm().Get_size()
-    for gidx in tasks[rank::size]:
-        gm = my_gammas[gidx]
-        tag = get_qTMD_file_tag(
-            str(data_dir),
-            lat_tag,
-            conf,
-            "CG.ex",
-            pos,
-            f"{sm_tag}.{pf_tag}.{gm}",
-        )
-        mpi_print(latt_info, f"Saving pion qTMD gamma {gm}: {tag}")
-        save_qTMD_pion_hdf5_noRoll(
-            pion_TMDs[:, :, gidx : gidx + 1, :],
-            tag,
-            [gm],
-            parameters["qext"],
-            W_index_list_CG,
-            parameters["t_insert"],
-            latt_info,
-        )
-
-    for pdf_kind, gauge_invariant in [("GI_PDF", True), ("CG_PDF", False)]:
-        t0 = time.time()
-        pion_PDFs = measurement.contract_PDF(
-            latt_info,
-            gauge,
-            prop_fw,
-            seq_bw_prop,
-            phases_PDF,
-            W_index_list_PDF,
-            src_gamma=args.src_interpolator,
-            gauge_invariant=gauge_invariant,
-        )
-        mpi_print(latt_info, f"contract_{pdf_kind} over: pion_PDFs.shape {np.shape(pion_PDFs)} {time.time() - t0}s")
-
-        if latt_info.mpi_rank == 0:
-            pion_PDFs = np.roll(pion_PDFs, -pos[3], axis=-1)
-            pion_PDFs = pion_PDFs[:, :, :, : parameters["t_insert"] + 2]
-            pion_PDFs = np.transpose(pion_PDFs, (0, 2, 1, 3))
-        pion_PDFs = getMPIComm().bcast(pion_PDFs, root=0)
-
-        for gidx in tasks[rank::size]:
-            gm = my_gammas[gidx]
-            tag = get_qTMD_file_tag(
-                str(data_dir),
-                lat_tag,
-                conf,
-                f"{pdf_kind}.ex",
-                pos,
-                f"{sm_tag}.{pf_tag}.{gm}",
-            )
-            mpi_print(latt_info, f"Saving pion {pdf_kind} gamma {gm}: {tag}")
-            save_qTMD_pion_hdf5_noRoll(
-                pion_PDFs[:, :, gidx : gidx + 1, :],
-                tag,
-                [gm],
-                parameters["qext_PDF"],
-                W_index_list_PDF,
-                parameters["t_insert"],
-                latt_info,
-            )
-    sync_backend_array(prop_fw.data)
-
-    if latt_info.mpi_rank == 0:
-        with sample_log_file.open("a+") as f:
-            f.write(sample_log_tag + "\n")
-    mpi_print(latt_info, f"DONE: {sample_log_tag} total {time.time() - t0_pos}s")
+        with sample_log_file.open("a+") as log_file:
+            log_file.write(sample_log_tag + "\n")
+    mpi_print(latt_info, f"DONE: {sample_log_tag} total {time.time() - source_start}s")

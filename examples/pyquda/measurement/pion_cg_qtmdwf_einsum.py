@@ -26,8 +26,8 @@ mpi_geometry = [int(i) for i in args.mpi_geometry.split(".")]
 
 # Global parameters
 data_dir="/home/jinchen/git/lat-software/LatCoding/examples/artifacts/data" # NOTE
-lat_tag = "S8T32" # NOTE
-sm_tag = "S8T32_einsum" # NOTE
+lat_tag = "S16T16_cg" # NOTE
+sm_tag = "S16T16_einsum" # NOTE
 
 
 # --------------------------
@@ -42,8 +42,8 @@ init(mpi_geometry, enable_mps=True)
 
 parameters = {
     "eta" : [0],
-    "b_T": 1,
-    "b_z" : 1,
+    "b_T": 0,
+    "b_z" : 8,
     "pzmin" : 0,
     "pzmax" : 1,
     "width" : 0,
@@ -55,7 +55,7 @@ Measurement = pion_TMDWF_measurement(parameters)
 xp = cp
 gammalist = ["5", "T", "T5", "X", "X5", "Y", "Y5", "Z", "Z5", "I", "SXT", "SXY", "SXZ", "SYT", "SYZ", "SZT"]
 src_mode = "fixed"
-pion_src = ["5", "T5"]
+pt2_src = ["5", "T5"]
 
 def source_tag(src_label):
     return f"{src_mode}_src{src_label}"
@@ -69,7 +69,7 @@ def gamma_from_label(src_label):
 
 interpolator_by_src = {
     src_label: gamma_matrix_to_backend(gamma_from_label(src_label), xp)
-    for src_label in pion_src
+    for src_label in pt2_src
 }
 G5 = gamma_matrix_to_backend(gamma_from_label("5"), xp)
 n_src = 1 # number of sources
@@ -79,8 +79,8 @@ n_src = 1 # number of sources
 # --------------------------
 
 ###################### load gauge ######################
-Ls = 8
-Lt = 32
+Ls = 16
+Lt = 16
 L = [Ls, Ls, Ls, Lt]
 xi_0, nu = 1.0, 1.0
 mass = -0.049 # kappa = 0.12623
@@ -89,7 +89,7 @@ csw_t = 1.0372
 multigrid = None # [[8, 8, 4, 4]]
 latt_info = core.LatticeInfo([Ls, Ls, Ls, Lt], -1, xi_0 / nu)
 
-gauge = io.readNERSCGauge(f"/home/jinchen/git/lat-software/LatCoding/configs/S8T32/wilson_b6.{conf}")
+gauge = io.readNERSCGauge(f"/home/jinchen/git/lat-software/LatCoding/configs/S{Ls}T{Lt}_cg/wilson_b6.cg.1e-14.{conf}")
 # gauge.hypSmear(1, 0.75, 0.6, 0.3, -1)
 
 mpi_print(latt_info, f"--lat_tag {lat_tag}")
@@ -154,25 +154,36 @@ for ipos, pos in enumerate(src_production):
     t0 = time.time()
     srcD = source.propagator(latt_info, "point", pos)
     srcDp = boosted_smearing(srcD, w=parameters["width"], boost=parameters["pos_boost"])
-    srcDm = boosted_smearing(srcD, w=parameters["width"], boost=parameters["neg_boost"])
+    same_source_smearing = parameters["width"] == 0 or np.array_equal(
+        parameters["pos_boost"],
+        parameters["neg_boost"],
+    )
+    srcDm = None
+    if not same_source_smearing:
+        srcDm = boosted_smearing(srcD, w=parameters["width"], boost=parameters["neg_boost"])
     cp.cuda.runtime.deviceSynchronize()
-    mpi_print(latt_info, f"TIME Pyquda: Generatring boosted src {time.time() - t0}")
+    mpi_print(latt_info, f"TIME Pyquda: Generating boosted sources {time.time() - t0}")
 
-    # get forward propagator: smeared-point
+    # Reuse one inversion unless the quark and antiquark sources differ.
     cp.cuda.runtime.deviceSynchronize()
     t0 = time.time()
     dirac.loadGauge(gauge)
     propag_f = core.invertPropagator(dirac, srcDp, 1, 0) # NOTE or "propag = core.invertPropagator(dirac, b, 0)" depends on the quda version
-    propag_b = core.invertPropagator(dirac, srcDm, 1, 0)
+    if same_source_smearing:
+        propag_b = propag_f
+        inversion_count = 1
+    else:
+        propag_b = core.invertPropagator(dirac, srcDm, 1, 0)
+        inversion_count = 2
     cp.cuda.runtime.deviceSynchronize()
-    mpi_print(latt_info, f"TIME: Pyquda inversion * 2 {time.time() - t0}")
+    mpi_print(latt_info, f"TIME: Pyquda inversion * {inversion_count} {time.time() - t0}")
 
     #! PyQUDA: contract 2pt TMD
     cp.cuda.runtime.deviceSynchronize()
     t0 = time.time()
     p_2pt_xyz = [[0, 0, -v] for v in range(parameters["pzmin"], parameters["pzmax"])]
     phases_2pt = MomentumPhase(latt_info).getPhases(p_2pt_xyz, x0=pos)
-    for src_label in pion_src:
+    for src_label in pt2_src:
         interpolator = interpolator_by_src[src_label]
         tag = get_c2pt_file_tag(data_dir, lat_tag, conf, "ex", pos, f"{sm_tag}.{source_tag(src_label)}")
         Measurement.contract_2pt_pion(
@@ -191,7 +202,7 @@ for ipos, pos in enumerate(src_production):
     # SP TMDWF contraction
     mpi_print(latt_info, f"Contraction: Start TMDWF: CG no links")
     t0_contract = time.time()
-    tmdwf_collect_by_src = {src_label: [] for src_label in pion_src} # [WL_indices][p][gamma][tau]
+    tmdwf_collect_by_src = {src_label: [] for src_label in pt2_src} # [WL_indices][p][gamma][tau]
 
     #>>>>>>>>>>>>>>>>>>>>>>>>> CG TMD <<<<<<<<<<<<<<<<<<<<<<<<<<#
 
@@ -209,7 +220,7 @@ for ipos, pos in enumerate(src_production):
 
     #! PyQUDA: prepare the source-interpolator-dependent part of the contraction for TMDWF
     G16_fw_interpolator_by_src = {}
-    for src_label in pion_src:
+    for src_label in pt2_src:
         interpolator = interpolator_by_src[src_label]
         fw_interpolator = contract("wtzyxilab, lj -> wtzyxijab", propag_f.data, interpolator)
         G16_fw_interpolator_by_src[src_label] = contract("gim, wtzyxmjab -> gwtzyxijab", pyquda_gamma_ls, fw_interpolator)
@@ -234,7 +245,7 @@ for ipos, pos in enumerate(src_production):
         cp.cuda.runtime.deviceSynchronize()
         t0 = time.time()
         temp0 = contract("ki, wtzyxklab, jl -> wtzyxjiba", G5, tmd_backward_prop_dir0.data.conj(), G5)
-        for src_label in pion_src:
+        for src_label in pt2_src:
             temp1 = contract("wtzyxjiba, gwtzyxijab -> gwtzyx", temp0, G16_fw_interpolator_by_src[src_label])
             temp2 = core.gatherLattice(contract("qwtzyx, gwtzyx -> qgt", phases_2pt, temp1).get(), [2, -1, -1, -1])
             tmdwf_collect_by_src[src_label].append(temp2)
@@ -264,7 +275,7 @@ for ipos, pos in enumerate(src_production):
         cp.cuda.runtime.deviceSynchronize()
         t0 = time.time()
         temp0 = contract("ki, wtzyxklab, jl -> wtzyxjiba", G5, tmd_backward_prop_dir1.data.conj(), G5)
-        for src_label in pion_src:
+        for src_label in pt2_src:
             temp1 = contract("wtzyxjiba, gwtzyxijab -> gwtzyx", temp0, G16_fw_interpolator_by_src[src_label])
             temp2 = core.gatherLattice(contract("qwtzyx, gwtzyx -> qgt", phases_2pt, temp1).get(), [2, -1, -1, -1])
             tmdwf_collect_by_src[src_label].append(temp2)
@@ -275,7 +286,7 @@ for ipos, pos in enumerate(src_production):
         del temp0
     del tmd_backward_prop_dir1
     
-    for src_label in pion_src:
+    for src_label in pt2_src:
         tmdwf_collect_by_src[src_label] = np.array(tmdwf_collect_by_src[src_label]) # shape (N_W, N_pz, N_gamma, N_t)
         mpi_print(latt_info, f"TIME contract_TMDWF: {source_tag(src_label)} shape {np.shape(tmdwf_collect_by_src[src_label])} {time.time()-t0_contract}s")
     del G16_fw_interpolator_by_src
@@ -294,7 +305,7 @@ for ipos, pos in enumerate(src_production):
         size = getMPIComm().Get_size()
         for gidx in tasks[rank::size]:
             gm = gammalist[gidx]
-            qTMDWF_tag = get_qTMDWF_file_tag(data_dir, lat_tag, conf, "ex", pos, f"{sm_tag}.{source_tag(src_label)}.O{gm}")
+            qTMDWF_tag = get_qTMDWF_file_tag(data_dir, lat_tag, conf, "ex", pos, f"{sm_tag}.{source_tag(src_label)}.snk{gm}")
             print(f"DEBUG: rank {rank}, {qTMDWF_tag}")
             data = TMDWF_collect[:, :, gidx:gidx+1, :] #! shape (N_W, N_pz, gm, N_t)
             save_qTMDWF_hdf5_noRoll(data, qTMDWF_tag, [gm], [[0, 0, p, 0] for p in range(parameters["pzmin"], parameters["pzmax"])], W_index_list_CG)
