@@ -13,14 +13,16 @@ from lametlat.correlators.pt2 import pt2_to_meff
 from lametlat.correlators.pt3_ratio import get_pt3_ratio_data
 from lametlat.plotting.plot_settings import *
 from lametlat.plotting.corr_plots import pt3_ratio_plot
+from lametlat.ground_state.pt2_fit import pt2_two_state_fit
+from lametlat.ground_state.pt3_ratio_fit import pt3_ratio_two_state_fit
 
 
 # --------------------------
 # Data selection
 # --------------------------
 
-Ls = 8
-Lt = 32
+Ls = 16
+Lt = 16
 lat_tag = f"S{Ls}T{Lt}_cg"
 sm_tag = f"S{Ls}T{Lt}_qtmd"
 data_dir = Path(__file__).resolve().parents[2] / "artifacts" / "data"
@@ -34,8 +36,7 @@ pt3_src = "5"
 pt3_snk = "5"
 pt3_pf = (0, 0, 0)
 pt3_q = (0, 0, 0)
-# tsep_values = [2, 4, 6, 8]
-tsep_values = [8]
+tsep_values = [2, 4, 6, 8]
 
 insertion_gammas = ["T"]
 bT_direction = "b_X"
@@ -173,18 +174,44 @@ ratio_real, ratio_imag = get_pt3_ratio_data(np.real(c2pt), np.imag(c2pt), qtmd_r
 
 print(np.shape( ratio_real[8]) )
 
-# ratio_real = {tsep: ratio_real[tsep][:, 1:tsep] for tsep in [2, 4, 6, 8]}
-ratio_real = {tsep: ratio_real[tsep][:, 1:tsep] for tsep in [8]}
+ratio_real_cut = {tsep: ratio_real[tsep][:, 1:tsep] for tsep in [2, 4, 6, 8]}
 
-print(np.shape( ratio_real[8]) )
+print(np.shape( ratio_real_cut[8]) )
 
-ratio_real_avg = jk_dict_avg(ratio_real)
+ratio_real_avg = jk_dict_avg(ratio_real_cut)
 
-# tau_dict = {tsep: np.arange(1, tsep) for tsep in [2, 4, 6, 8]}
-tau_dict = {tsep: np.arange(1, tsep) for tsep in [8]}
+tau_dict = {tsep: np.arange(1, tsep) for tsep in [2, 4, 6, 8]}
 
 (fig_real, ax_real) = pt3_ratio_plot(tau_dict, ratio_real_avg)
 plt.tight_layout()
 fig_real.show()
 
+# %%
+bare_qpdf = []
+
+pt2_fit_res = pt2_two_state_fit(c2pt_avg, tmin=3, tmax=8, Lt=Lt)
+for idz in range(8, 17):
+    qtmd_real = {}
+    qtmd_imag = {}
+    for key in qtmd_by_tsep:
+        qtmd_real[key] = np.real(qtmd_by_tsep[key][:,idz,:])
+        qtmd_imag[key] = np.imag(qtmd_by_tsep[key][:,idz,:])
+
+    ratio_real, ratio_imag = get_pt3_ratio_data(np.real(c2pt), np.imag(c2pt), qtmd_real, qtmd_imag)
+
+    fit_ratio_real = jk_dict_avg(ratio_real)
+    fit_ratio_imag = jk_dict_avg(ratio_imag)
+    
+    ratio_fit_res = pt3_ratio_two_state_fit([4, 6], 1, fit_ratio_real, fit_ratio_imag, Lt, pt2_fit_res=pt2_fit_res)
+    
+    if ratio_fit_res.Q < 0.05:
+        print(f"Warning: bad fit with z={idz-8}")
+    
+    bare_qpdf.append( ratio_fit_res.p['O00_re'] / 2 / ratio_fit_res.p['E0'] )
+    
+fig, ax = default_plot()
+ax.errorbar(np.arange(len(bare_qpdf)), gv.mean(bare_qpdf), gv.sdev(bare_qpdf), **ERRORBAR_STYLE)
+plt.tight_layout()
+plt.show()
+    
 # %%

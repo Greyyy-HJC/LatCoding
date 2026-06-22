@@ -88,7 +88,7 @@ class pion_TMDWF_measurement():
             )
 
         phases = _asarray_on_queue(phases, xp, prop_f.data)
-        bw_prop = contract.contract_expression("ij, wtzyxilab, kl -> wtzyxkjba", G5_backend, prop_b.data.conj(), G5_backend)
+        bw_prop = contract("ij, wtzyxilab, kl -> wtzyxkjba", G5_backend, prop_b.data.conj(), G5_backend)
 
         corr_local = xp.zeros(
             (n_gamma, phases.shape[0], latt_info.global_size[3]),
