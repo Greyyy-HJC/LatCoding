@@ -19,8 +19,8 @@ from lametlat.plotting.corr_plots import pt3_ratio_plot
 # Data selection
 # --------------------------
 
-Ls = 16
-Lt = 16
+Ls = 8
+Lt = 32
 lat_tag = f"S{Ls}T{Lt}_cg"
 sm_tag = f"S{Ls}T{Lt}_qtmd"
 data_dir = Path(__file__).resolve().parents[2] / "artifacts" / "data"
@@ -34,7 +34,8 @@ pt3_src = "5"
 pt3_snk = "5"
 pt3_pf = (0, 0, 0)
 pt3_q = (0, 0, 0)
-tsep_values = [2, 4, 6, 8]
+# tsep_values = [2, 4, 6, 8]
+tsep_values = [8]
 
 insertion_gammas = ["T"]
 bT_direction = "b_X"
@@ -165,20 +166,22 @@ plt.show()
 qtmd_real = {}
 qtmd_imag = {}
 for key in qtmd_by_tsep:
-    qtmd_real[key] = qtmd_by_tsep[key][:,8,:] # z = 0
-    qtmd_imag[key] = np.zeros_like(qtmd_real[key])
+    qtmd_real[key] = np.real(qtmd_by_tsep[key][:,8,:]) # z = 0
+    qtmd_imag[key] = np.imag(qtmd_by_tsep[key][:,8,:])
 
 ratio_real, ratio_imag = get_pt3_ratio_data(np.real(c2pt), np.imag(c2pt), qtmd_real, qtmd_imag)
 
 print(np.shape( ratio_real[8]) )
 
-ratio_real = {tsep: ratio_real[tsep][:, 1:tsep] for tsep in [2, 4, 6, 8]}
+# ratio_real = {tsep: ratio_real[tsep][:, 1:tsep] for tsep in [2, 4, 6, 8]}
+ratio_real = {tsep: ratio_real[tsep][:, 1:tsep] for tsep in [8]}
 
 print(np.shape( ratio_real[8]) )
 
 ratio_real_avg = jk_dict_avg(ratio_real)
 
-tau_dict = {tsep: np.arange(1, tsep) for tsep in [2, 4, 6, 8]}
+# tau_dict = {tsep: np.arange(1, tsep) for tsep in [2, 4, 6, 8]}
+tau_dict = {tsep: np.arange(1, tsep) for tsep in [8]}
 
 (fig_real, ax_real) = pt3_ratio_plot(tau_dict, ratio_real_avg)
 plt.tight_layout()
