@@ -147,9 +147,9 @@ def save_three_point(corr, pos, correlator_tag, momenta, wilson_indices, latt_in
 
 L = [Ls, Ls, Ls, Lt]
 xi_0, nu = 1.0, 1.0
-mass = -0.049
-csw_r = 1.0372
-csw_t = 1.0372
+mass = -0.038888
+csw_r = 1.0336
+csw_t = 1.0336
 multigrid = None
 latt_info = core.LatticeInfo(L, -1, xi_0 / nu)
 

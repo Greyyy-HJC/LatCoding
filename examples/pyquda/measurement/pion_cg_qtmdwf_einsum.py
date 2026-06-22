@@ -83,9 +83,9 @@ Ls = 16
 Lt = 16
 L = [Ls, Ls, Ls, Lt]
 xi_0, nu = 1.0, 1.0
-mass = -0.049 # kappa = 0.12623
-csw_r = 1.0372
-csw_t = 1.0372
+mass = -0.038888 # kappa = 0.12623
+csw_r = 1.0336
+csw_t = 1.0336
 multigrid = None # [[8, 8, 4, 4]]
 latt_info = core.LatticeInfo([Ls, Ls, Ls, Lt], -1, xi_0 / nu)
 
