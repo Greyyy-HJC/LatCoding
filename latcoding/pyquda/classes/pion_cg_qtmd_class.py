@@ -123,6 +123,7 @@ written with the wrong momentum/gamma interpretation.
 """
 
 import numpy as np
+from opt_einsum import contract
 
 from pyquda_utils import core
 from latcoding.pyquda.utils.boosted_smearing import boosted_smearing
@@ -223,18 +224,62 @@ class pion_TMD:
 
         return np.array(pion_PDFs)
 
+    # def _contract_qTMD_one_shift(self, seq_bw_line, shifted_prop, sink_gamma_ls, source_gamma_ls, phases):
+    #     xp = _get_xp_from_array(shifted_prop.data)
+    #     sink_inserted = xp.einsum("wtzyxjicf,gim->gwtzyxjmcf", seq_bw_line, sink_gamma_ls, optimize=True)
+    #     corr_local = xp.einsum(
+    #         "gwtzyxjiab,wtzyxilba,glj->gwtzyx",
+    #         sink_inserted,
+    #         shifted_prop.data,
+    #         source_gamma_ls,
+    #         optimize=True,
+    #     )
+    #     corr = xp.einsum("qwtzyx,gwtzyx->gqt", phases, corr_local, optimize=True)
+    #     return core.gatherLattice(xp.asnumpy(corr), [2, -1, -1, -1])
+    
+    #! to save memory
     def _contract_qTMD_one_shift(self, seq_bw_line, shifted_prop, sink_gamma_ls, source_gamma_ls, phases):
         xp = _get_xp_from_array(shifted_prop.data)
-        sink_inserted = xp.einsum("wtzyxjicf,gim->gwtzyxjmcf", seq_bw_line, sink_gamma_ls, optimize=True)
-        corr_local = xp.einsum(
-            "gwtzyxjiab,wtzyxilba,glj->gwtzyx",
-            sink_inserted,
+
+        # First contract color indices and propagator color/source structure.
+        # Result shape: [w,t,z,y,x,j,i]
+        #
+        # seq_bw_line:       [w,t,z,y,x,j,r,a,b]
+        # shifted_prop.data: [w,t,z,y,x,i,l,b,a]
+        #
+        # M[w,t,z,y,x,j,i,r,l] would still be too large.
+        # Instead contract color and one spin chain into a local spin matrix.
+        spin_kernel = contract(
+            "wtzyxjrab,wtzyxilba->wtzyxjril",
+            seq_bw_line,
             shifted_prop.data,
-            source_gamma_ls,
-            optimize=True,
         )
-        corr = xp.einsum("qwtzyx,gwtzyx->gqt", phases, corr_local, optimize=True)
-        return core.gatherLattice(xp.asnumpy(corr), [2, -1, -1, -1])
+
+        # Now insert the gamma matrices only on the small spin indices.
+        # sink_gamma_ls:   [g,r,i]
+        # source_gamma_ls: [g,l,j]
+        corr_local = contract(
+            "wtzyxjril,gri,glj->gwtzyx",
+            spin_kernel,
+            sink_gamma_ls,
+            source_gamma_ls,
+        )
+
+        del spin_kernel
+
+        corr = contract(
+            "qwtzyx,gwtzyx->gqt",
+            phases,
+            corr_local,
+        )
+
+        del corr_local
+
+        corr_cpu = xp.asnumpy(corr)
+        del corr
+
+        return core.gatherLattice(corr_cpu, [2, -1, -1, -1])
+    
 
     def create_TMD_Wilsonline_index_list_CG(self):
         index_list_trans0 = []

@@ -1,5 +1,6 @@
 import numpy as np
 
+from opt_einsum import contract
 from pyquda_utils import core, gamma
 from latcoding.pyquda.utils.boosted_smearing import boosted_smearing
 from latcoding.pyquda.utils.tools import _get_xp_from_array, mpi_print, _asarray_on_queue
@@ -77,7 +78,7 @@ class pion_TMDWF_measurement():
             src_gamma_ls = pyquda_gamma_ls
         elif src_mode == "dagger_of_sink":
             src_gamma_ls = [
-                xp.einsum("ab,bc,cd->ad", G5_backend, xp.swapaxes(gamma_g.conj(), 0, 1), G5_backend)
+                contract("ab,bc,cd->ad", G5_backend, xp.swapaxes(gamma_g.conj(), 0, 1), G5_backend)
                 for gamma_g in pyquda_gamma_ls
             ]
         else:
@@ -87,16 +88,16 @@ class pion_TMDWF_measurement():
             )
 
         phases = _asarray_on_queue(phases, xp, prop_f.data)
-        bw_prop = xp.einsum("ij, wtzyxilab, kl -> wtzyxkjba", G5_backend, prop_b.data.conj(), G5_backend)
+        bw_prop = contract.contract_expression("ij, wtzyxilab, kl -> wtzyxkjba", G5_backend, prop_b.data.conj(), G5_backend)
 
         corr_local = xp.zeros(
             (n_gamma, phases.shape[0], latt_info.global_size[3]),
             dtype=prop_f.data.dtype,
         )
         for gamma_idx, (sink_gamma, src_gamma) in enumerate(zip(pyquda_gamma_ls, src_gamma_ls)):
-            bw_prop_g = xp.einsum("wtzyxjicf, im -> wtzyxjmcf", bw_prop, sink_gamma)
-            temp_g = xp.einsum("wtzyxjiab, wtzyxilba, lj -> wtzyx", bw_prop_g, prop_f.data, src_gamma)
-            corr_local[gamma_idx] = xp.einsum("qwtzyx, wtzyx -> qt", phases, temp_g)
+            bw_prop_g = contract("wtzyxjicf, im -> wtzyxjmcf", bw_prop, sink_gamma)
+            temp_g = contract("wtzyxjiab, wtzyxilba, lj -> wtzyx", bw_prop_g, prop_f.data, src_gamma)
+            corr_local[gamma_idx] = contract("qwtzyx, wtzyx -> qt", phases, temp_g)
             del bw_prop_g, temp_g
 
         corr = core.gatherLattice(_array_to_numpy(corr_local), [2, -1, -1, -1])
