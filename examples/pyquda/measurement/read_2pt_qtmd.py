@@ -24,7 +24,7 @@ from lametlat.ground_state.pt3_ratio_fit import pt3_ratio_two_state_fit
 Ls = 16
 Lt = 16
 lat_tag = f"S{Ls}T{Lt}_cg"
-sm_tag = f"S{Ls}T{Lt}_qtmd"
+sm_tag = f"S{Ls}T{Lt}_qtmd_debug" #todo
 data_dir = Path(__file__).resolve().parents[2] / "artifacts" / "data"
 
 pt2_src_mode = "fixed"
@@ -36,7 +36,8 @@ pt3_src = "5"
 pt3_snk = "5"
 pt3_pf = (0, 0, 0)
 pt3_q = (0, 0, 0)
-tsep_values = [2, 4, 6, 8]
+# tsep_values = [2, 4, 6, 8] #todo
+tsep_values = [8]
 
 insertion_gammas = ["T"]
 bT_direction = "b_X"
@@ -167,20 +168,22 @@ plt.show()
 qtmd_real = {}
 qtmd_imag = {}
 for key in qtmd_by_tsep:
-    qtmd_real[key] = np.real(qtmd_by_tsep[key][:,8,:]) # z = 0
-    qtmd_imag[key] = np.imag(qtmd_by_tsep[key][:,8,:])
+    qtmd_real[key] = jackknife(np.real(qtmd_by_tsep[key][:,9,:])) # z = 1
+    qtmd_imag[key] = jackknife(np.imag(qtmd_by_tsep[key][:,9,:]))
 
-ratio_real, ratio_imag = get_pt3_ratio_data(np.real(c2pt), np.imag(c2pt), qtmd_real, qtmd_imag)
+ratio_real, ratio_imag = get_pt3_ratio_data(jackknife(np.real(c2pt)), jackknife(np.imag(c2pt)), qtmd_real, qtmd_imag)
 
 print(np.shape( ratio_real[8]) )
 
-ratio_real_cut = {tsep: ratio_real[tsep][:, 1:tsep] for tsep in [2, 4, 6, 8]}
+# ratio_real_cut = {tsep: ratio_real[tsep][:, 1:tsep] for tsep in [2, 4, 6, 8]} #todo
+ratio_real_cut = {tsep: ratio_real[tsep][:, 1:tsep] for tsep in [8]} 
 
 print(np.shape( ratio_real_cut[8]) )
 
 ratio_real_avg = jk_dict_avg(ratio_real_cut)
 
-tau_dict = {tsep: np.arange(1, tsep) for tsep in [2, 4, 6, 8]}
+# tau_dict = {tsep: np.arange(1, tsep) for tsep in [2, 4, 6, 8]} #todo
+tau_dict = {tsep: np.arange(1, tsep) for tsep in [8]} 
 
 (fig_real, ax_real) = pt3_ratio_plot(tau_dict, ratio_real_avg)
 plt.tight_layout()
@@ -194,10 +197,10 @@ for idz in range(8, 17):
     qtmd_real = {}
     qtmd_imag = {}
     for key in qtmd_by_tsep:
-        qtmd_real[key] = np.real(qtmd_by_tsep[key][:,idz,:])
-        qtmd_imag[key] = np.imag(qtmd_by_tsep[key][:,idz,:])
+        qtmd_real[key] = jackknife( np.real(qtmd_by_tsep[key][:,idz,:]) )
+        qtmd_imag[key] = jackknife( np.imag(qtmd_by_tsep[key][:,idz,:]) )
 
-    ratio_real, ratio_imag = get_pt3_ratio_data(np.real(c2pt), np.imag(c2pt), qtmd_real, qtmd_imag)
+    ratio_real, ratio_imag = get_pt3_ratio_data(jackknife( np.real(c2pt) ), jackknife( np.imag(c2pt) ), qtmd_real, qtmd_imag)
 
     fit_ratio_real = jk_dict_avg(ratio_real)
     fit_ratio_imag = jk_dict_avg(ratio_imag)

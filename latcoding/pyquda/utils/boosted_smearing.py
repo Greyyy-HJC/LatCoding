@@ -61,7 +61,7 @@ def _get_global_grid_coords(xp, latt_info: LatticeInfo):
 
     return rx, ry, rz
 
-def _build_kernel_realspace_distributed(xp, latt_info: LatticeInfo, w: float, boost: Sequence[float]):
+def _build_kernel_realspace_distributed(xp, latt_info: LatticeInfo, w, boost: Sequence[float]):
     """
     build the distributed real space Gaussian kernel.
     return a LatticeComplex object (Checkerboard layout), which can be directly passed to fft.
@@ -69,6 +69,11 @@ def _build_kernel_realspace_distributed(xp, latt_info: LatticeInfo, w: float, bo
     rx, ry, rz = _get_global_grid_coords(xp, latt_info)
     Lx, Ly, Lz, Lt = latt_info.size
     Gx, Gy, Gz, Gt = latt_info.global_size
+    
+    if np.isscalar(w):
+        wx = wy = wz = float(w)
+    else:
+        wx, wy, wz = map(float, w)
     
     kx, ky, kz = boost
 
@@ -78,7 +83,7 @@ def _build_kernel_realspace_distributed(xp, latt_info: LatticeInfo, w: float, bo
     rz = rz[:, None, None]
 
     # calculate the exponential part
-    real = (-0.5/(w*w)) * (rx**2 + ry**2 + rz**2)
+    real = -0.5 * ((rx / wx)**2 + (ry / wy)**2 + (rz / wz)**2)
     imag = 2*pi * ((kx/Gx)*rx + (ky/Gy)*ry + (kz/Gz)*rz)
     
     k_xyz = _exp_complex(xp, real, imag) # Shape: (Lz, Ly, Lx)
@@ -99,7 +104,7 @@ def _build_kernel_realspace_distributed(xp, latt_info: LatticeInfo, w: float, bo
     
     return kernel_field
 
-def _boosted_smearing_fermion(src: LatticeFermion, *, w: float, boost: Sequence[float]):
+def _boosted_smearing_fermion(src: LatticeFermion, *, w, boost: Sequence[float]):
     """
     Core implementation of boosted smearing for a single fermion.
     Optimized: Assumes Identity Gauge (No U_trafo input).
@@ -140,7 +145,7 @@ def _boosted_smearing_fermion(src: LatticeFermion, *, w: float, boost: Sequence[
 def boosted_smearing(
     src,
     *,
-    w: float,
+    w,
     boost: Sequence[float],
 ):
     t0 = perf_counter()
