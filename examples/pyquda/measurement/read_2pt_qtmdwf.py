@@ -17,18 +17,17 @@ from lametlat.ground_state.qda_fit import qda_two_state_joint_fit
 
 Ls = 16
 Lt = 16
-
-
+sm_tag = "S16T16_tmdwf"
 
 data_dir = Path(__file__).resolve().parents[2] / "artifacts" / "data"
 z_values = np.arange(-8, 9)
 
 c2pt_paths = sorted(
-    (data_dir / "c2pt").glob(f"S{Ls}T{Lt}_cg.c2pt.*.fixed_src5.h5")
+    (data_dir / "c2pt").glob(f"S{Ls}T{Lt}_cg.c2pt.*.{sm_tag}.fixed_src5.h5")
 )
 qtmdwf_paths = sorted(
     (data_dir / "qTMDWF").glob(
-        f"S{Ls}T{Lt}_cg.qTMDWF.*.fixed_src5.snkT5.h5"
+        f"S{Ls}T{Lt}_cg.qTMDWF.*.{sm_tag}.fixed_src5.snkT5.h5"
     )
 )
 
@@ -65,7 +64,6 @@ qtmdwf_avg = jk_ls_avg(jackknife(np.real(qtmdwf)))
 print("c2pt shape:", c2pt.shape)
 print("qtmdwf shape:", qtmdwf.shape)
 
-# %%
 meff_avg = pt2_to_meff(c2pt_avg)
 
 fig, ax = default_plot()
@@ -77,25 +75,29 @@ qtmdwf_z0 = qtmdwf_avg[8]
 qtmdwf_z0_ratio = qtmdwf_z0 / c2pt_avg
 
 fig_real, ax_real = qda_ratio_plot(np.arange(Lt), qtmdwf_z0_ratio)
+ax_real.set_title("z=0", **FONT_SIZE)
 fig_real.show()
 
 qtmdwf_z1 = qtmdwf_avg[9]
 qtmdwf_z1_ratio = qtmdwf_z1 / c2pt_avg
 
 fig_real, ax_real = qda_ratio_plot(np.arange(Lt), qtmdwf_z1_ratio)
+ax_real.set_title("z=1", **FONT_SIZE)
 fig_real.show()
 
 # %%
 
 bare_qtmdwf = []
 for idz in range(8, 17):
-    pt2_trange = np.arange(3, 7)
-    qda_trange = np.arange(3, 7)
+    pt2_trange = np.arange(2, 6)
+    qda_trange = np.arange(2, 6)
     fit_res = qda_two_state_joint_fit(c2pt_avg, qtmdwf_avg[idz], None, pt2_trange, qda_trange, Lt)
     bare_qtmdwf.append( fit_res.p['O00_re'] )
     
 fig, ax = default_plot()
 ax.errorbar(np.arange(len(bare_qtmdwf)), gv.mean(bare_qtmdwf), gv.sdev(bare_qtmdwf), **ERRORBAR_STYLE)
+ax.set_title("bare qDA", **FONT_SIZE)
+ax.set_xlabel("z", **FONT_SIZE)
 plt.tight_layout()
 plt.show()
 # %%

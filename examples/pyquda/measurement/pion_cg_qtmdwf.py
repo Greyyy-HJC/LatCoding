@@ -27,7 +27,7 @@ mpi_geometry = [int(i) for i in args.mpi_geometry.split(".")]
 # Global parameters
 data_dir="/home/jinchen/git/lat-software/LatCoding/examples/artifacts/data" # NOTE
 lat_tag = "S16T16_cg" # NOTE
-sm_tag = "S16T16_einsum" # NOTE
+sm_tag = "S16T16_tmdwf" # NOTE
 
 
 # --------------------------
@@ -138,14 +138,14 @@ time.sleep(1)
 #! Measurement
 ###################### loop over sources ######################
 for ipos, pos in enumerate(src_production):
-    
     sample_log_tag = get_sample_log_tag("ex", pos, sm_tag)
     mpi_print(latt_info, f"Contraction START: {sample_log_tag}")
-    # with open(sample_log_file, "a+") as f:
-    #     f.seek(0)
-    #     if sample_log_tag in f.read():
-    #         mpi_print(latt_info, f"Contraction SKIP: {sample_log_tag}")
-    #         continue
+    
+    with open(sample_log_file, "a+") as f:
+        f.seek(0)
+        if sample_log_tag in f.read():
+            mpi_print(latt_info, f"Contraction SKIP: {sample_log_tag}")
+            continue #! comment for test
 
     #>>>>>>>>>>>>>>>>>>>>>>>>> Propagators <<<<<<<<<<<<<<<<<<<<<<<<<<#
 

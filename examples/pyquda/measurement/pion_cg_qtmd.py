@@ -16,8 +16,8 @@ conf = args.config_num
 mpi_geometry = [int(i) for i in args.mpi_geometry.split(".")]
 
 # Global parameters
-Ls = 8
-Lt = 32
+Ls = 16
+Lt = 16
 repo_root = Path(__file__).resolve().parents[3]
 data_dir = repo_root / "examples/artifacts/data"
 gauge_path = repo_root / f"configs/S{Ls}T{Lt}_cg/wilson_b6.cg.1e-14.{conf}"
@@ -197,6 +197,12 @@ for pos in src_positions:
     source_start = time.time()
     sample_log_tag = get_sample_log_tag("ex", pos, f"{sm_tag}.{pf_tag}")
     mpi_print(latt_info, f"Contraction START: {sample_log_tag}")
+    
+    with open(sample_log_file, "a+") as f:
+        f.seek(0)
+        if sample_log_tag in f.read():
+            mpi_print(latt_info, f"Contraction SKIP: {sample_log_tag}")
+            continue #! comment for test
 
     # Forward propagators for the quark and antiquark source smearings
     t0 = time.time()
