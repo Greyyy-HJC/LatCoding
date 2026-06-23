@@ -36,3 +36,4 @@ dist/
 
 examples/artifacts/
 **/*sub.sh
+swing/
