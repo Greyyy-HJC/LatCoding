@@ -1,3 +1,4 @@
+# %%
 import gvar as gv
 from tqdm.auto import tqdm
 from pyquda import init
@@ -26,8 +27,8 @@ N_conf = 20
 
 xi_0, nu = 1.0, 1.0
 mass = -0.038888 # kappa = 0.12623
-csw_r = 1.02868
-csw_t = 1.02868
+csw_r = 1.0336
+csw_t = 1.0336
 multigrid = None 
 
 latt_info = core.LatticeInfo([Ls, Ls, Ls, Lt], -1, xi_0 / nu)

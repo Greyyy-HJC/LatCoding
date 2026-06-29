@@ -24,13 +24,13 @@ from lametlat.ground_state.pt3_ratio_fit import pt3_ratio_two_state_fit
 Ls = 16
 Lt = 16
 lat_tag = f"S{Ls}T{Lt}_cg"
-sm_tag = f"S{Ls}T{Lt}_qtmd_debug" #todo
+sm_tag = f"S{Ls}T{Lt}_qtmd_debug_hyp" #todo
 data_dir = Path(__file__).resolve().parents[2] / "artifacts" / "data"
 
 pt2_src_mode = "fixed"
 pt2_src = "5"
 pt2_snk = "5"
-pt2_momentum = (0, 0, 0)
+pt2_momentum = (0, 0, 0) #todo
 
 pt3_src = "5"
 pt3_snk = "5"
@@ -80,7 +80,7 @@ pt3_q_tag = momentum_tag(pt3_q)
 
 c2pt_paths = sorted(
     (data_dir / "c2pt").glob(
-        f"{lat_tag}.c2pt.*.CG.ex.*.{sm_tag}.{pt2_src_tag}.h5"
+        f"{lat_tag}.c2pt.*.CG.ex.x0y0z0t0.{sm_tag}.{pt2_src_tag}.h5"
     )
 )
 c2pt_files = index_files(c2pt_paths, "c2pt")

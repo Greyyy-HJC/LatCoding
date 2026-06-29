@@ -17,17 +17,18 @@ from lametlat.ground_state.qda_fit import qda_two_state_joint_fit
 
 Ls = 16
 Lt = 16
-sm_tag = "S16T16_tmdwf"
+sm_tag = "S16T16_tmdwf_debug_gz"
+sink_gamma = "Z5"
 
 data_dir = Path(__file__).resolve().parents[2] / "artifacts" / "data"
 z_values = np.arange(-8, 9)
 
 c2pt_paths = sorted(
-    (data_dir / "c2pt").glob(f"S{Ls}T{Lt}_cg.c2pt.*.{sm_tag}.fixed_src5.h5")
+    (data_dir / "c2pt").glob(f"S{Ls}T{Lt}_cg.c2pt.*.x0y0z0t0.{sm_tag}.fixed_src5.h5")
 )
 qtmdwf_paths = sorted(
     (data_dir / "qTMDWF").glob(
-        f"S{Ls}T{Lt}_cg.qTMDWF.*.{sm_tag}.fixed_src5.snkT5.h5"
+        f"S{Ls}T{Lt}_cg.qTMDWF.*.x0y0z0t0.{sm_tag}.fixed_src5.snk{sink_gamma}.h5"
     )
 )
 
@@ -46,12 +47,12 @@ qtmdwf_data = []
 
 for config_num in configs:
     with h5py.File(c2pt_files[config_num], "r") as h5_file:
-        c2pt_data.append(h5_file["SS/5/PX0PY0PZ0"][:])
+        c2pt_data.append(h5_file["SS/5/PX0PY0PZ6"][:])
 
     qtmdwf_z_data = []
     with h5py.File(qtmdwf_files[config_num], "r") as h5_file:
         for z in z_values:
-            dataset = f"SP/T5/PX0PY0PZ0/b_X/eta0/bT0/bz{z}"
+            dataset = f"SP/{sink_gamma}/PX0PY0PZ6/b_X/eta0/bT0/bz{z}"
             qtmdwf_z_data.append(h5_file[dataset][:])
     qtmdwf_data.append(qtmdwf_z_data)
 

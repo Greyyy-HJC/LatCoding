@@ -27,7 +27,7 @@ mpi_geometry = [int(i) for i in args.mpi_geometry.split(".")]
 # Global parameters
 data_dir="/home/jinchen/git/lat-software/LatCoding/examples/artifacts/data" # NOTE
 lat_tag = "S16T16_cg" # NOTE
-sm_tag = "S16T16_tmdwf" # NOTE
+sm_tag = "S16T16_tmdwf_debug_gz" # NOTE
 
 
 # --------------------------
@@ -44,8 +44,8 @@ parameters = {
     "eta" : [0],
     "b_T": 0,
     "b_z" : 8,
-    "pzmin" : 0,
-    "pzmax" : 1,
+    "pzmin" : 5,
+    "pzmax" : 7,
     "width" : 0,
     "pos_boost" : [0,0,0],
     "neg_boost" : [0,0,0],
@@ -83,9 +83,12 @@ Ls = 16
 Lt = 16
 L = [Ls, Ls, Ls, Lt]
 xi_0, nu = 1.0, 1.0
-mass = -0.038888 # kappa = 0.12623
-csw_r = 1.0336
-csw_t = 1.0336
+# mass = -0.038888 # kappa = 0.12623
+# csw_r = 1.0336
+# csw_t = 1.0336
+mass = -0.049 #todo
+csw_r = 1.0372
+csw_t = 1.0372
 multigrid = None # [[8, 8, 4, 4]]
 latt_info = core.LatticeInfo([Ls, Ls, Ls, Lt], -1, xi_0 / nu)
 
@@ -100,7 +103,7 @@ mpi_print(latt_info, f"--plaquette U_hyp: {gauge.plaquette()}")
 
 ###################### create multigrid inverter ######################
 
-dirac = core.getClover(latt_info, mass, 1e-10, 10000, xi_0, csw_r, csw_t, multigrid)
+dirac = core.getClover(latt_info, mass, 1e-8, 10000, xi_0, csw_r, csw_t, multigrid)
 
 
 ###################### prepare gamma list ######################
@@ -138,6 +141,8 @@ time.sleep(1)
 #! Measurement
 ###################### loop over sources ######################
 for ipos, pos in enumerate(src_production):
+    pos = [0, 0, 0, 0] #todo
+    
     sample_log_tag = get_sample_log_tag("ex", pos, sm_tag)
     mpi_print(latt_info, f"Contraction START: {sample_log_tag}")
     

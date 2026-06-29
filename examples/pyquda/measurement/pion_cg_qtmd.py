@@ -22,7 +22,7 @@ repo_root = Path(__file__).resolve().parents[3]
 data_dir = repo_root / "examples/artifacts/data"
 gauge_path = repo_root / f"configs/S{Ls}T{Lt}_cg/wilson_b6.cg.1e-14.{conf}"
 lat_tag = f"S{Ls}T{Lt}_cg"
-sm_tag = f"S{Ls}T{Lt}_qtmd"
+sm_tag = f"S{Ls}T{Lt}_qtmd_debug_hyp" #todo
 
 
 # --------------------------
@@ -63,7 +63,7 @@ parameters = {
     "qext": [[0, 0, 0, 0]],
     # pf is the fixed final-pion (sink) momentum used to build the sequential
     # source; the later conjugation produces the usual exp(-i*p_f.(y-x_src)).
-    "pf": [0, 0, 0, 0],
+    "pf": [0, 0, 0, 0], # todo
     # p_2pt is the pion momentum measured by the two-point correlator.  The
     # script negates these modes below, so its projection is exp(-i*p.(x-x_src)).
     "p_2pt": [[0, 0, 0, 0]],
@@ -147,14 +147,17 @@ def save_three_point(corr, pos, correlator_tag, momenta, wilson_indices, latt_in
 
 L = [Ls, Ls, Ls, Lt]
 xi_0, nu = 1.0, 1.0
-mass = -0.038888
-csw_r = 1.0336
-csw_t = 1.0336
+# mass = -0.038888
+# csw_r = 1.0336
+# csw_t = 1.0336
+mass = -0.049 #todo
+csw_r = 1.0372
+csw_t = 1.0372
 multigrid = None
 latt_info = core.LatticeInfo(L, -1, xi_0 / nu)
 
 gauge = io.readNERSCGauge(str(gauge_path))
-# gauge.hypSmear(1, 0.75, 0.6, 0.3, -1)
+gauge.hypSmear(1, 0.75, 0.6, 0.3, -1) #todo
 
 mpi_print(latt_info, f"--gauge_path {gauge_path}")
 mpi_print(latt_info, f"--data_dir {data_dir}")
@@ -164,7 +167,7 @@ mpi_print(latt_info, f"--config_num {conf}")
 mpi_print(latt_info, f"--mpi_geometry {mpi_geometry}")
 mpi_print(latt_info, f"--plaquette U: {gauge.plaquette()}")
 
-dirac = core.getClover(latt_info, mass, 1e-10, 10000, xi_0, csw_r, csw_t, multigrid)
+dirac = core.getClover(latt_info, mass, 1e-8, 10000, xi_0, csw_r, csw_t, multigrid)
 dirac.loadGauge(gauge)
 
 
@@ -194,6 +197,8 @@ pt3_snk_gamma = gamma_from_label(pt3_snk)
 # --------------------------
 
 for pos in src_positions:
+    pos = [0, 0, 0, 0] #todo
+    
     source_start = time.time()
     sample_log_tag = get_sample_log_tag("ex", pos, f"{sm_tag}.{pf_tag}")
     mpi_print(latt_info, f"Contraction START: {sample_log_tag}")
