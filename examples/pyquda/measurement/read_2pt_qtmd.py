@@ -30,11 +30,11 @@ data_dir = Path(__file__).resolve().parents[2] / "artifacts" / "data"
 pt2_src_mode = "fixed"
 pt2_src = "5"
 pt2_snk = "5"
-pt2_momentum = (0, 0, 0) #todo
+pt2_momentum = (0, 0, 6) #todo
 
 pt3_src = "5"
 pt3_snk = "5"
-pt3_pf = (0, 0, 0)
+pt3_pf = (0, 0, 6)
 pt3_q = (0, 0, 0)
 # tsep_values = [2, 4, 6, 8] #todo
 tsep_values = [8]
