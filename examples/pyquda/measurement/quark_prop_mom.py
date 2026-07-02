@@ -39,8 +39,8 @@ dirac = core.getClover(latt_info, mass, 1e-8, 10000, xi_0, csw_r, csw_t, multigr
 
 I = gamma.gamma(0)
 
-momentum_list = [[0, 0, 0], [0, 0, 2], [0, 0, 4], [0, 0, 6]]
-momentum_label = ["(0,0,0)", "(0,0,2)", "(0,0,4)", "(0,0,6)"]
+momentum_list = [[0, 0, 0], [0, 0, 2], (2, 2, 2)]
+momentum_label = ["(0,0,0)", "(0,0,2)", "(2,2,2)"]
 momentum_phases = MomentumPhase(latt_info).getPhases(momentum_list)
 
 # S(t, p): source and sink on the same time slice t; shape per momentum is (N_conf, Lt)
@@ -51,7 +51,7 @@ for cfg in tqdm(range(N_conf), desc="Processing configurations"):
     
     conf_path = conf_dir / f"wilson_b6.cg.1e-14.{cfg}"
     gauge = io.readNERSCGauge(str(conf_path))
-    gauge.hypSmear(1, 0.75, 0.6, 0.3, -1)
+    # gauge.hypSmear(1, 0.75, 0.6, 0.3, -1)
 
     dirac.loadGauge(gauge)
 

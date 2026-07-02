@@ -24,7 +24,7 @@ from lametlat.ground_state.pt3_ratio_fit import pt3_ratio_two_state_fit
 Ls = 16
 Lt = 16
 lat_tag = f"S{Ls}T{Lt}_cg"
-sm_tag = f"S{Ls}T{Lt}_qtmd_debug_hyp" #todo
+sm_tag = f"S{Ls}T{Lt}_qtmd_debug_p6" #todo
 data_dir = Path(__file__).resolve().parents[2] / "artifacts" / "data"
 
 pt2_src_mode = "fixed"

@@ -22,7 +22,7 @@ repo_root = Path(__file__).resolve().parents[3]
 data_dir = repo_root / "examples/artifacts/data"
 gauge_path = repo_root / f"configs/S{Ls}T{Lt}_cg/wilson_b6.cg.1e-14.{conf}"
 lat_tag = f"S{Ls}T{Lt}_cg"
-sm_tag = f"S{Ls}T{Lt}_qtmd_debug_hyp" #todo
+sm_tag = f"S{Ls}T{Lt}_qtmd_debug_p6" #todo
 
 
 # --------------------------
@@ -63,10 +63,10 @@ parameters = {
     "qext": [[0, 0, 0, 0]],
     # pf is the fixed final-pion (sink) momentum used to build the sequential
     # source; the later conjugation produces the usual exp(-i*p_f.(y-x_src)).
-    "pf": [0, 0, 0, 0], # todo
+    "pf": [0, 0, 6, 0], # todo
     # p_2pt is the pion momentum measured by the two-point correlator.  The
     # script negates these modes below, so its projection is exp(-i*p.(x-x_src)).
-    "p_2pt": [[0, 0, 0, 0]],
+    "p_2pt": [[0, 0, 6, 0]],
     "width": 0,
     "pos_boost": [0, 0, 0],
     "neg_boost": [0, 0, 0],
@@ -157,7 +157,7 @@ multigrid = None
 latt_info = core.LatticeInfo(L, -1, xi_0 / nu)
 
 gauge = io.readNERSCGauge(str(gauge_path))
-gauge.hypSmear(1, 0.75, 0.6, 0.3, -1) #todo
+# gauge.hypSmear(1, 0.75, 0.6, 0.3, -1) #todo
 
 mpi_print(latt_info, f"--gauge_path {gauge_path}")
 mpi_print(latt_info, f"--data_dir {data_dir}")
