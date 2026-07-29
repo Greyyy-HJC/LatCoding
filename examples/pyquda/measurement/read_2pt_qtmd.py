@@ -48,6 +48,13 @@ bz_values = np.arange(-8, 9)
 
 def momentum_tag(momentum):
     return f"PX{momentum[0]}PY{momentum[1]}PZ{momentum[2]}"
+def row_index(table, row, label):
+    matches = np.flatnonzero(np.all(np.asarray(table) == np.asarray(row), axis=1))
+    if len(matches) != 1:
+        raise ValueError(f"Expected one {label} row {row}, found {len(matches)}")
+    return int(matches[0])
+
+
 
 
 def config_number(path, correlator):
@@ -71,7 +78,7 @@ def index_files(paths, correlator):
 
 
 if pt2_src_mode == "fixed":
-    pt2_src_tag = f"fixed_src{pt2_src}"
+    pt2_src_tag = f"src{pt2_src}"
 else:
     pt2_src_tag = pt2_src_mode
 
@@ -93,25 +100,21 @@ expected_configs = set(configs)
 qtmd_files_by_tsep = {}
 for tsep in tsep_values:
     pt3_pf_tag = f"{momentum_tag(pt3_pf)}dt{tsep}"
-    qtmd_files_by_gamma = {}
-    for insertion_gamma in insertion_gammas:
-        qtmd_paths = sorted(
-            (data_dir / "qTMD").glob(
-                f"{lat_tag}.qTMD.*.CG.ex.*.{sm_tag}."
-                f"src{pt3_src}.snk{pt3_snk}.{pt3_pf_tag}.O{insertion_gamma}.h5"
-            )
+    qtmd_paths = sorted(
+        (data_dir / "qTMD").glob(
+            f"{lat_tag}.qTMD.*.CG.ex.*.{sm_tag}."
+            f"src{pt3_src}.snk{pt3_snk}.{pt3_pf_tag}.h5"
         )
-        qtmd_files_by_gamma[insertion_gamma] = index_files(qtmd_paths, "qTMD")
-        actual_configs = set(qtmd_files_by_gamma[insertion_gamma])
-        if actual_configs != expected_configs:
-            missing = sorted(expected_configs - actual_configs)
-            unexpected = sorted(actual_configs - expected_configs)
-            raise FileNotFoundError(
-                f"Incomplete qTMD data for tsep={tsep}, gamma={insertion_gamma}: "
-                f"missing configs={missing}, unexpected configs={unexpected}"
-            )
-
-    qtmd_files_by_tsep[tsep] = qtmd_files_by_gamma
+    )
+    qtmd_files = index_files(qtmd_paths, "qTMD")
+    actual_configs = set(qtmd_files)
+    if actual_configs != expected_configs:
+        missing = sorted(expected_configs - actual_configs)
+        unexpected = sorted(actual_configs - expected_configs)
+        raise FileNotFoundError(
+            f"Incomplete qTMD data for tsep={tsep}: missing={missing}, unexpected={unexpected}"
+        )
+    qtmd_files_by_tsep[tsep] = qtmd_files
 
 
 # --------------------------
@@ -129,23 +132,25 @@ qtmd_by_tsep = {}
 
 for tsep in tsep_values:
     qtmd_data = []
-
     for config_num in configs:
+        qtmd_path = qtmd_files_by_tsep[tsep][config_num]
         config_qtmd = []
-        for insertion_gamma in insertion_gammas:
-            gamma_qtmd = []
-            qtmd_path = qtmd_files_by_tsep[tsep][insertion_gamma][config_num]
-            with h5py.File(qtmd_path, "r") as h5_file:
+        with h5py.File(qtmd_path, "r") as h5_file:
+            if h5_file.attrs.get("qtmd_hdf5_schema") != "connected_qtmd_dense_v1":
+                raise ValueError(f"Unsupported qTMD schema in {qtmd_path}")
+            gamma_labels = [value.decode() for value in h5_file["gamma_list"][:]]
+            momentum_list = h5_file["momentum_list"][:]
+            wilson_list = h5_file["wilson_index_list"][:]
+            momentum_idx = row_index(momentum_list, [*pt3_q, 0], "momentum")
+            transverse_direction = {"b_X": 0, "b_Y": 1}[bT_direction]
+            for insertion_gamma in insertion_gammas:
+                gamma_qtmd = []
+                gamma_idx = gamma_labels.index(insertion_gamma)
                 for bz in bz_values:
-                    dataset = (
-                        f"SS/{insertion_gamma}/{pt3_q_tag}/{bT_direction}/"
-                        f"eta{eta}/bT{bT}/bz{bz}"
-                    )
-                    gamma_qtmd.append(h5_file[dataset][:])
-            config_qtmd.append(gamma_qtmd)
-
+                    wilson_idx = row_index(wilson_list, [bT, bz, eta, transverse_direction], "Wilson")
+                    gamma_qtmd.append(h5_file["corr"][wilson_idx, momentum_idx, gamma_idx])
+                config_qtmd.append(gamma_qtmd)
         qtmd_data.append(config_qtmd)
-
     qtmd_by_tsep[tsep] = np.asarray(qtmd_data)[:,0,:,:]
 
 print("c2pt shape (config, t):", c2pt.shape)

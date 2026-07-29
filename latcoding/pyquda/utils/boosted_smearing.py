@@ -16,7 +16,6 @@ from time import perf_counter
 import numpy as np
 
 # PyQUDA imports
-from pyquda.field import Ns, Nc
 from pyquda.field import LatticeInfo, LatticeFermion, LatticePropagator, LatticeComplex
 
 # Import PyQUDA's distributed FFT
@@ -104,10 +103,9 @@ def _build_kernel_realspace_distributed(xp, latt_info: LatticeInfo, w, boost: Se
     
     return kernel_field
 
-def _boosted_smearing_fermion(src: LatticeFermion, *, w, boost: Sequence[float]):
+def _boosted_smearing_field(src, *, w, boost: Sequence[float]):
     """
-    Core implementation of boosted smearing for a single fermion.
-    Optimized: Assumes Identity Gauge (No U_trafo input).
+    Apply one batched FFT convolution to a fermion or full propagator.
     """
     latt_info: LatticeInfo = src.latt_info
     xp = _get_xp_from_array(src.data)
@@ -126,7 +124,8 @@ def _boosted_smearing_fermion(src: LatticeFermion, *, w, boost: Sequence[float])
     K_p = fft(K_xyz, fft3d=True, backend="cupy" if xp.__name__=="cupy" else "numpy")
 
     # multiply in momentum space: psi(k) * K(k)
-    psi_p.data = psi_p.data * K_p.data[..., None, None]
+    kernel_shape = (...,) + (None,) * len(src.field_shape)
+    psi_p.data *= K_p.data[kernel_shape]
 
     # ---------------------------------------------------------
     # 3. Inverse FFT (Distributed)
@@ -141,29 +140,26 @@ def _boosted_smearing_fermion(src: LatticeFermion, *, w, boost: Sequence[float])
     
     return psi_smeared
 
-# ---------- public API ----------
+def _zero_width(w):
+    widths = np.asarray(w, dtype=float)
+    if widths.ndim > 1 or widths.size not in (1, 3):
+        raise ValueError("boosted_smearing: width must be a scalar or three spatial widths")
+    return bool(np.all(widths == 0.0))
+
+
 def boosted_smearing(
     src,
     *,
     w,
     boost: Sequence[float],
 ):
+    """Apply boosted Gaussian smearing, batching all propagator components."""
     t0 = perf_counter()
     if not isinstance(src, (LatticeFermion, LatticePropagator)):
         raise TypeError(f"boosted_smearing: unsupported src type: {type(src)}")
-    if float(w) == 0.0:
+    if _zero_width(w):
         mpi_timer_print(src.latt_info, "boosted_smearing", perf_counter() - t0, field=type(src).__name__, width=w, boost=boost, skipped="width=0")
         return src
-    if isinstance(src, LatticeFermion):
-        out = _boosted_smearing_fermion(src, w=w, boost=boost)
-        mpi_timer_print(src.latt_info, "boosted_smearing", perf_counter() - t0, field="LatticeFermion", width=w, boost=boost)
-        return out
-    if isinstance(src, LatticePropagator):
-        out = LatticePropagator(src.latt_info)
-        for s in range(Ns):
-            for c in range(Nc):
-                # pass in a single fermion
-                f_sm = _boosted_smearing_fermion(src.getFermion(s, c), w=w, boost=boost)
-                out.setFermion(f_sm, s, c)
-        mpi_timer_print(src.latt_info, "boosted_smearing", perf_counter() - t0, field="LatticePropagator", width=w, boost=boost)
-        return out
+    out = _boosted_smearing_field(src, w=w, boost=boost)
+    mpi_timer_print(src.latt_info, "boosted_smearing", perf_counter() - t0, field=type(src).__name__, width=w, boost=boost)
+    return out

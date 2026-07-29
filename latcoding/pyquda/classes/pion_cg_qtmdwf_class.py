@@ -1,38 +1,7 @@
-import numpy as np
-
-from opt_einsum import contract
-from pyquda_utils import core, gamma
 from latcoding.pyquda.utils.boosted_smearing import boosted_smearing
-from latcoding.pyquda.utils.tools import _get_xp_from_array, mpi_print, _asarray_on_queue
 from latcoding.pyquda.utils.io_corr import save_c2pt_hdf5
-
-
-my_gammas = ["5", "T", "T5", "X", "X5", "Y", "Y5", "Z", "Z5", "I", "SXT", "SXY", "SXZ", "SYT", "SYZ", "SZT"]
-#! Add PyQUDA gamma matrices by order
-my_pyquda_gammas = [gamma.gamma(15), gamma.gamma(8), gamma.gamma(7), gamma.gamma(1), gamma.gamma(14), gamma.gamma(2), gamma.gamma(13), gamma.gamma(4), gamma.gamma(11), gamma.gamma(0), gamma.gamma(9), gamma.gamma(3), gamma.gamma(5), gamma.gamma(10), gamma.gamma(6), gamma.gamma(12)]
-pyquda_gammas_order = [15, 8, 7, 1, 14, 2, 13, 4, 11, 0, 9, 3, 5, 10, 6, 12]
-G5 = gamma.gamma(15)
-
-
-def _gamma_matrix(gamma_like):
-    if hasattr(gamma_like, "matrix"):
-        return gamma_like.matrix
-    return gamma_like
-
-
-def _array_to_numpy(arr):
-    if hasattr(arr, "get"):
-        return arr.get()
-    if type(arr).__module__.split(".")[0] == "cupy":
-        return arr.get()
-    # if type(arr).__module__.split(".")[0] == "dpnp":
-    #     import dpnp
-    #     return dpnp.asnumpy(arr)
-    return np.asarray(arr)
-
-
-def _gamma_on_backend(gamma_like, xp, ref_arr):
-    return _asarray_on_queue(_gamma_matrix(gamma_like), xp, ref_arr)
+from latcoding.pyquda.utils.pion_utils import contract_pion_2pt, my_gammas
+from latcoding.pyquda.utils.tools import mpi_print
 
 
 """
@@ -54,57 +23,23 @@ class pion_TMDWF_measurement():
         self.neg_boost = parameters["neg_boost"]
         
     #! PyQUDA: contract 2pt TMD
-    def contract_2pt_pion(self, latt_info, prop_f, prop_b, phases, tag, src_mode="fixed", pion_interpolator=G5): 
-        
+    def contract_2pt_pion(self, latt_info, prop_f, prop_b, phases, tag, src_gamma="5"):
+        """Contract two-point functions through the shared pion kernel."""
         mpi_print(latt_info, "Begin sink smearing")
         prop_f = boosted_smearing(prop_f, w=self.width, boost=self.pos_boost)
         prop_b = boosted_smearing(prop_b, w=self.width, boost=self.neg_boost)
         mpi_print(latt_info, "Sink smearing completed")
 
-        xp = _get_xp_from_array(prop_f.data)
-
-        n_gamma = len(my_pyquda_gammas)
-        G5_backend = _gamma_on_backend(G5, xp, prop_f.data)
-        pyquda_gamma_ls = [_gamma_on_backend(gamma_pyq, xp, prop_f.data) for gamma_pyq in my_pyquda_gammas]
-
-        # Source Dirac structure:
-        # - fixed: use one fixed pion interpolator on source
-        # - same_as_sink: use the same Gamma_g on source and sink
-        # - dagger_of_sink: use gamma5 * Gamma_g^\dagger * gamma5 on source
-        if src_mode == "fixed":
-            pion_interpolator_backend = _gamma_on_backend(pion_interpolator, xp, prop_f.data)
-            src_gamma_ls = [pion_interpolator_backend] * n_gamma
-        elif src_mode == "same_as_sink":
-            src_gamma_ls = pyquda_gamma_ls
-        elif src_mode == "dagger_of_sink":
-            src_gamma_ls = [
-                contract("ab,bc,cd->ad", G5_backend, xp.swapaxes(gamma_g.conj(), 0, 1), G5_backend)
-                for gamma_g in pyquda_gamma_ls
-            ]
-        else:
-            raise ValueError(
-                f"Invalid src_mode: {src_mode}. "
-                "Expected one of ['fixed', 'same_as_sink', 'dagger_of_sink']."
-            )
-
-        phases = _asarray_on_queue(phases, xp, prop_f.data)
-        bw_prop = contract("ij, wtzyxilab, kl -> wtzyxkjba", G5_backend, prop_b.data.conj(), G5_backend)
-
-        corr_local = xp.zeros(
-            (n_gamma, phases.shape[0], latt_info.global_size[3]),
-            dtype=prop_f.data.dtype,
-        )
-        for gamma_idx, (sink_gamma, src_gamma) in enumerate(zip(pyquda_gamma_ls, src_gamma_ls)):
-            bw_prop_g = contract("wtzyxjicf, im -> wtzyxjmcf", bw_prop, sink_gamma)
-            temp_g = contract("wtzyxjiab, wtzyxilba, lj -> wtzyx", bw_prop_g, prop_f.data, src_gamma)
-            corr_local[gamma_idx] = contract("qwtzyx, wtzyx -> qt", phases, temp_g)
-            del bw_prop_g, temp_g
-
-        corr = core.gatherLattice(_array_to_numpy(corr_local), [2, -1, -1, -1])
-        
+        corr = contract_pion_2pt(latt_info, prop_f, prop_b, phases, src_gamma=src_gamma)
         if latt_info.mpi_rank == 0:
-            save_c2pt_hdf5(corr, tag, my_gammas, self.plist)
-        del corr, corr_local
+            save_c2pt_hdf5(
+                corr,
+                tag,
+                my_gammas,
+                self.plist,
+                attrs={"source_interpolator": src_gamma, "positive_boost": self.pos_boost, "negative_boost": self.neg_boost},
+            )
+        del corr
     
         
     def create_TMD_Wilsonline_index_list_CG(self):

@@ -44,7 +44,12 @@ from latcoding.pyquda.utils.io_corr import (
     save_qTMD_pion_hdf5_noRoll,
 )
 from latcoding.pyquda.utils.pion_utils import gamma_from_label
-from latcoding.pyquda.utils.tools import mpi_print, srcLoc_distri_eq
+from latcoding.pyquda.utils.tools import (
+    append_sample_log_entry,
+    mpi_print,
+    read_sample_log_entries,
+    srcLoc_distri_eq,
+)
 
 
 # --------------------------
@@ -83,7 +88,7 @@ n_src = 1
 
 if pt2_src_mode == "fixed":
     pt2_src_gamma = pt2_src
-    pt2_src_tag = f"fixed_src{pt2_src}"
+    pt2_src_tag = f"src{pt2_src}"
 elif pt2_src_mode in {"same_as_sink", "dagger_of_sink"}:
     pt2_src_gamma = pt2_src_mode
     pt2_src_tag = pt2_src_mode
@@ -113,32 +118,36 @@ def prepare_three_point(corr, pos, latt_info):
 
 def save_three_point(corr, pos, correlator_tag, momenta, wilson_indices, latt_info):
     corr = prepare_three_point(corr, pos, latt_info)
+    if latt_info.mpi_rank != 0:
+        return
     pf = parameters["pf"]
     pf_tag = f"PX{pf[0]}PY{pf[1]}PZ{pf[2]}dt{parameters['t_insert']}"
-    rank = latt_info.mpi_rank
-    size = getMPIComm().Get_size()
-
-    for gamma_idx in range(rank, len(my_gammas), size):
-        insertion_gamma = my_gammas[gamma_idx]
-        tag = get_qTMD_file_tag(
-            str(data_dir),
-            lat_tag,
-            conf,
-            correlator_tag,
-            pos,
-            f"{sm_tag}.src{pt3_src}.snk{pt3_snk}."
-            f"{pf_tag}.O{insertion_gamma}",
-        )
-        mpi_print(latt_info, f"Saving {correlator_tag} insertion gamma {insertion_gamma}: {tag}")
-        save_qTMD_pion_hdf5_noRoll(
-            corr[:, :, gamma_idx : gamma_idx + 1, :],
-            tag,
-            [insertion_gamma],
-            momenta,
-            wilson_indices,
-            parameters["t_insert"],
-            latt_info,
-        )
+    tag = get_qTMD_file_tag(
+        str(data_dir),
+        lat_tag,
+        conf,
+        correlator_tag,
+        pos,
+        f"{sm_tag}.src{pt3_src}.snk{pt3_snk}.{pf_tag}",
+    )
+    mpi_print(latt_info, f"Saving dense {correlator_tag} qTMD: {tag}")
+    attrs = {
+        "source_interpolator": pt3_src,
+        "sink_interpolator": pt3_snk,
+        "operator_kind": correlator_tag,
+        "spectator_boost": parameters["pos_boost"],
+        "active_boost": parameters["neg_boost"],
+    }
+    save_qTMD_pion_hdf5_noRoll(
+        corr,
+        tag,
+        my_gammas,
+        momenta,
+        wilson_indices,
+        parameters["t_insert"],
+        latt_info,
+        attrs=attrs,
+    )
 
 
 # --------------------------
@@ -182,12 +191,19 @@ src_positions = srcLoc_distri_eq(L, src_origin)[:n_src]
 pf = parameters["pf"]
 pf_tag = f"PX{pf[0]}PY{pf[1]}PZ{pf[2]}dt{parameters['t_insert']}"
 sample_log_file = data_dir / "sample_log" / f"TMD_{sm_tag}_{conf}_{pf_tag}"
+boost_identity = f"pos{'_'.join(map(str, parameters['pos_boost']))}.neg{'_'.join(map(str, parameters['neg_boost']))}"
+sample_identity = f"{sm_tag}.{pf_tag}.src{pt3_src}.snk{pt3_snk}.{boost_identity}"
+
+
 if latt_info.mpi_rank == 0:
     sample_log_file.parent.mkdir(parents=True, exist_ok=True)
     (data_dir / "c2pt").mkdir(parents=True, exist_ok=True)
     (data_dir / "qTMD").mkdir(parents=True, exist_ok=True)
     sample_log_file.touch(exist_ok=True)
 getMPIComm().Barrier()
+
+completed_samples = read_sample_log_entries(sample_log_file) if latt_info.mpi_rank == 0 else None
+completed_samples = getMPIComm().bcast(completed_samples, root=0)
 
 pt3_snk_gamma = gamma_from_label(pt3_snk)
 
@@ -200,14 +216,12 @@ for pos in src_positions:
     pos = [0, 0, 0, 0] #todo
     
     source_start = time.time()
-    sample_log_tag = get_sample_log_tag("ex", pos, f"{sm_tag}.{pf_tag}")
+    sample_log_tag = get_sample_log_tag("ex", pos, sample_identity)
     mpi_print(latt_info, f"Contraction START: {sample_log_tag}")
     
-    with open(sample_log_file, "a+") as f:
-        f.seek(0)
-        if sample_log_tag in f.read():
-            mpi_print(latt_info, f"Contraction SKIP: {sample_log_tag}")
-            continue #! comment for test
+    if sample_log_tag in completed_samples:
+        mpi_print(latt_info, f"Contraction SKIP: {sample_log_tag}")
+        continue
 
     # Forward propagators for the quark and antiquark source smearings
     t0 = time.time()
@@ -268,21 +282,23 @@ for pos in src_positions:
         mpi_print(latt_info, "SKIP: Pion 2pt contraction")
 
     # Fixed-sink sequential propagator
+    # Convention: the positive-boost line is the fixed spectator at the sink;
+    # the negative-boost line remains active at the qTMD insertion.
     t0 = time.time()
-    prop_sink_smeared = boosted_smearing(
-        prop_neg.copy(),
+    spectator_sink_prop = boosted_smearing(
+        prop_pos.copy(),
         w=parameters["width"],
-        boost=parameters["neg_boost"],
+        boost=parameters["pos_boost"],
     )
     seq_bw_prop = create_meson_bw_seq_pyquda(
         dirac,
-        prop_sink_smeared,
+        spectator_sink_prop,
         pos,
         parameters["pf"],
         parameters["t_insert"],
         pt3_snk_gamma,
         parameters["width"],
-        parameters["pos_boost"],
+        parameters["neg_boost"],
     )
     mpi_print(latt_info, f"TIME PyQUDA: Pion sequential propagator {time.time() - t0}s")
 
@@ -296,7 +312,7 @@ for pos in src_positions:
     t0 = time.time()
     pion_TMDs = measurement.contract_qTMD_CG(
         latt_info,
-        prop_pos,
+        prop_neg,
         seq_bw_prop,
         phases_TMD,
         wilson_dir0,
@@ -322,6 +338,6 @@ for pos in src_positions:
     if prop_neg is not prop_pos:
         sync_backend_array(prop_neg.data)
     if latt_info.mpi_rank == 0:
-        with sample_log_file.open("a+") as log_file:
-            log_file.write(sample_log_tag + "\n")
+        append_sample_log_entry(sample_log_file, sample_log_tag)
+    completed_samples.add(sample_log_tag)
     mpi_print(latt_info, f"DONE: {sample_log_tag} total {time.time() - source_start}s")

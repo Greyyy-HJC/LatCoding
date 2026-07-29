@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 import os
+from pathlib import Path
+
+import numpy as np
 
 # ---------- Backend Helpers (consistent with boosted_smearing_pyquda) ----------
 def _get_xp_from_array(a):
@@ -47,6 +50,44 @@ def gamma_matrix_to_backend(gamma_like, xp, ref_arr=None, dtype=None):
     if dtype is not None:
         gamma_arr = gamma_arr.astype(dtype, copy=False)
     return gamma_arr
+
+def array_to_numpy(arr):
+    """Copy a NumPy, CuPy, or dpnp array to host NumPy."""
+    backend = type(arr).__module__.split(".")[0]
+    if backend == "dpnp":
+        import dpnp
+
+        return dpnp.asnumpy(arr)
+    if backend == "cupy" or hasattr(arr, "get"):
+        return arr.get()
+    return np.asarray(arr)
+
+
+def read_sample_log_entries(path):
+    """Read exact non-empty sample-log lines."""
+    path = Path(path)
+    if not path.exists():
+        return set()
+    with path.open("r", encoding="utf-8") as handle:
+        return {line.strip() for line in handle if line.strip()}
+
+
+def append_sample_log_entry(path, entry):
+    """Durably append one exact entry, returning False if it already exists."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    entry = str(entry).strip()
+    if not entry:
+        raise ValueError("sample-log entry must not be empty")
+    with path.open("a+", encoding="utf-8") as handle:
+        handle.seek(0)
+        if entry in {line.strip() for line in handle if line.strip()}:
+            return False
+        handle.seek(0, os.SEEK_END)
+        handle.write(entry + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    return True
 
 def mpi_print(latt_info, message):
     if latt_info.mpi_rank == 0:

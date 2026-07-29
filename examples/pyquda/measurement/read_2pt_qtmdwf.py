@@ -1,5 +1,5 @@
 # %%
-"""Read src5/snk5 2pt and src5/snkT5 qTMDWF data into NumPy arrays."""
+"""Read src5/snk5 2pt and a selected Gamma from all-channel qTMDWF files."""
 
 import re
 from pathlib import Path
@@ -18,17 +18,17 @@ from lametlat.ground_state.qda_fit import qda_two_state_joint_fit
 Ls = 16
 Lt = 16
 sm_tag = "S16T16_tmdwf_debug_gz"
-sink_gamma = "Z5"
+sink_gamma = "T5"
 
 data_dir = Path(__file__).resolve().parents[2] / "artifacts" / "data"
 z_values = np.arange(-8, 9)
 
 c2pt_paths = sorted(
-    (data_dir / "c2pt").glob(f"S{Ls}T{Lt}_cg.c2pt.*.x0y0z0t0.{sm_tag}.fixed_src5.h5")
+    (data_dir / "c2pt").glob(f"S{Ls}T{Lt}_cg.c2pt.*.x0y0z0t0.{sm_tag}.src5.h5")
 )
 qtmdwf_paths = sorted(
     (data_dir / "qTMDWF").glob(
-        f"S{Ls}T{Lt}_cg.qTMDWF.*.x0y0z0t0.{sm_tag}.fixed_src5.snk{sink_gamma}.h5"
+        f"S{Ls}T{Lt}_cg.qTMDWF.*.x0y0z0t0.{sm_tag}.src5.h5"
     )
 )
 
@@ -89,12 +89,28 @@ fig_real.show()
 # %%
 
 bare_qtmdwf = []
+fit_for_plot = {}
 for idz in range(8, 17):
-    pt2_trange = np.arange(2, 6)
-    qda_trange = np.arange(2, 6)
+    z = idz - 8
+    pt2_trange = np.arange(1, 6)
+    qda_trange = np.arange(3, 7)
     fit_res = qda_two_state_joint_fit(c2pt_avg, qtmdwf_avg[idz], None, pt2_trange, qda_trange, Lt)
-    bare_qtmdwf.append( fit_res.p['O00_re'] )
-    
+    bare_qtmdwf.append(fit_res.p["O00_re"])
+    if z in (0, 2, 4):
+        fit_for_plot[z] = fit_res
+
+for z, fit_res in fit_for_plot.items():
+    idz = 8 + z
+    fig_real, ax_real = qda_ratio_plot(
+        np.arange(Lt),
+        qtmdwf_avg[idz] / c2pt_avg,
+        fit_result=fit_res,
+        fit_trange=np.arange(3, 7),
+        Lt=Lt,
+        id_label={"z": z},
+    )
+    fig_real.show()
+
 fig, ax = default_plot()
 ax.errorbar(np.arange(len(bare_qtmdwf)), gv.mean(bare_qtmdwf), gv.sdev(bare_qtmdwf), **ERRORBAR_STYLE)
 ax.set_title("bare qDA", **FONT_SIZE)

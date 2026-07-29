@@ -4,15 +4,20 @@ import os
 import time
 import numpy as np
 import cupy as cp
-from opt_einsum import contract
 
 from pyquda import init, getMPIComm
 from pyquda_utils import core, io, source
 from pyquda_utils.phase import MomentumPhase
 
 from latcoding.pyquda.utils.boosted_smearing import boosted_smearing
-from latcoding.pyquda.classes.pion_cg_qtmdwf_class import pion_TMDWF_measurement, my_pyquda_gammas
-from latcoding.pyquda.utils.tools import gamma_matrix_to_backend, srcLoc_distri_eq, mpi_print
+from latcoding.pyquda.classes.pion_cg_qtmdwf_class import pion_TMDWF_measurement
+from latcoding.pyquda.utils.tools import (
+    append_sample_log_entry,
+    mpi_print,
+    read_sample_log_entries,
+    srcLoc_distri_eq,
+)
+from latcoding.pyquda.utils.pion_utils import contract_pion_2pt
 from latcoding.pyquda.utils.io_corr import get_sample_log_tag, get_c2pt_file_tag, get_qTMDWF_file_tag, save_qTMDWF_hdf5_noRoll
 
 
@@ -44,34 +49,21 @@ parameters = {
     "eta" : [0],
     "b_T": 0,
     "b_z" : 8,
-    "pzmin" : 5,
-    "pzmax" : 7,
+    "pzmin" : 0,
+    "pzmax" : 6,
     "width" : 0,
     "pos_boost" : [0,0,0],
     "neg_boost" : [0,0,0],
     "save_propagators" : False
 }
 Measurement = pion_TMDWF_measurement(parameters)
-xp = cp
 gammalist = ["5", "T", "T5", "X", "X5", "Y", "Y5", "Z", "Z5", "I", "SXT", "SXY", "SXZ", "SYT", "SYZ", "SZT"]
-src_mode = "fixed"
 pt2_src = ["5", "T5"]
 
 def source_tag(src_label):
-    return f"{src_mode}_src{src_label}"
+    return f"src{src_label}"
 
 
-def gamma_from_label(src_label):
-    if src_label not in gammalist:
-        raise ValueError(f"Invalid pion source interpolator: {src_label}. Expected one of {gammalist}.")
-    return my_pyquda_gammas[gammalist.index(src_label)]
-
-
-interpolator_by_src = {
-    src_label: gamma_matrix_to_backend(gamma_from_label(src_label), xp)
-    for src_label in pt2_src
-}
-G5 = gamma_matrix_to_backend(gamma_from_label("5"), xp)
 n_src = 1 # number of sources
 
 # --------------------------
@@ -83,17 +75,14 @@ Ls = 16
 Lt = 16
 L = [Ls, Ls, Ls, Lt]
 xi_0, nu = 1.0, 1.0
-# mass = -0.038888 # kappa = 0.12623
-# csw_r = 1.0336
-# csw_t = 1.0336
-mass = -0.049 #todo
-csw_r = 1.0372
-csw_t = 1.0372
+mass = -0.038888 # kappa = 0.12623
+csw_r = 1.0336
+csw_t = 1.0336
 multigrid = None # [[8, 8, 4, 4]]
 latt_info = core.LatticeInfo([Ls, Ls, Ls, Lt], -1, xi_0 / nu)
 
 gauge = io.readNERSCGauge(f"/home/jinchen/git/lat-software/LatCoding/configs/S{Ls}T{Lt}_cg/wilson_b6.cg.1e-14.{conf}")
-# gauge.hypSmear(1, 0.75, 0.6, 0.3, -1)
+gauge.hypSmear(1, 0.75, 0.6, 0.3, -1)
 
 mpi_print(latt_info, f"--lat_tag {lat_tag}")
 mpi_print(latt_info, f"--sm_tag {sm_tag}")
@@ -105,18 +94,6 @@ mpi_print(latt_info, f"--plaquette U_hyp: {gauge.plaquette()}")
 
 dirac = core.getClover(latt_info, mass, 1e-8, 10000, xi_0, csw_r, csw_t, multigrid)
 
-
-###################### prepare gamma list ######################
-# use the first gamma's dtype and device to allocate the container
-first_gamma = gamma_matrix_to_backend(my_pyquda_gammas[0], xp)
-n_gamma = len(my_pyquda_gammas)
-    
-pyquda_gamma_ls = xp.empty(
-    (n_gamma,) + first_gamma.shape,
-    dtype=first_gamma.dtype,
-)       
-for gamma_idx, gamma_pyq in enumerate(my_pyquda_gammas):
-    pyquda_gamma_ls[gamma_idx] = gamma_matrix_to_backend(gamma_pyq, xp, dtype=first_gamma.dtype)
 
 ###################### setup source positions ######################
 src_shift = np.array([0,0,0,0]) + np.array([7,11,13,23])
@@ -134,23 +111,25 @@ src_production = src_positions[:n_src] # take the number of sources needed for t
 sample_log_file = data_dir + f"/sample_log/TMDWF_{sm_tag}_{conf}"
 if latt_info.mpi_rank == 0:
     os.makedirs(os.path.dirname(sample_log_file), exist_ok=True)
-    f = open(sample_log_file, "a+")
-    f.close()
-time.sleep(1)
+    open(sample_log_file, "a+").close()
+getMPIComm().Barrier()
+boost_identity = f"pos{'_'.join(map(str, parameters['pos_boost']))}.neg{'_'.join(map(str, parameters['neg_boost']))}"
+sample_identity = f"{sm_tag}.src{'-'.join(pt2_src)}.{boost_identity}"
+
+
+completed_samples = read_sample_log_entries(sample_log_file) if latt_info.mpi_rank == 0 else None
+completed_samples = getMPIComm().bcast(completed_samples, root=0)
 
 #! Measurement
 ###################### loop over sources ######################
 for ipos, pos in enumerate(src_production):
-    pos = [0, 0, 0, 0] #todo
     
-    sample_log_tag = get_sample_log_tag("ex", pos, sm_tag)
+    sample_log_tag = get_sample_log_tag("ex", pos, sample_identity)
     mpi_print(latt_info, f"Contraction START: {sample_log_tag}")
     
-    with open(sample_log_file, "a+") as f:
-        f.seek(0)
-        if sample_log_tag in f.read():
-            mpi_print(latt_info, f"Contraction SKIP: {sample_log_tag}")
-            continue #! comment for test
+    if sample_log_tag in completed_samples:
+        mpi_print(latt_info, f"Contraction SKIP: {sample_log_tag}")
+        continue
 
     #>>>>>>>>>>>>>>>>>>>>>>>>> Propagators <<<<<<<<<<<<<<<<<<<<<<<<<<#
 
@@ -189,7 +168,6 @@ for ipos, pos in enumerate(src_production):
     p_2pt_xyz = [[0, 0, -v] for v in range(parameters["pzmin"], parameters["pzmax"])]
     phases_2pt = MomentumPhase(latt_info).getPhases(p_2pt_xyz, x0=pos)
     for src_label in pt2_src:
-        interpolator = interpolator_by_src[src_label]
         tag = get_c2pt_file_tag(data_dir, lat_tag, conf, "ex", pos, f"{sm_tag}.{source_tag(src_label)}")
         Measurement.contract_2pt_pion(
             latt_info,
@@ -197,8 +175,7 @@ for ipos, pos in enumerate(src_production):
             propag_b,
             phases_2pt,
             tag,
-            src_mode=src_mode,
-            pion_interpolator=interpolator,
+            src_gamma=src_label,
         )
 
     cp.cuda.runtime.deviceSynchronize()
@@ -223,13 +200,6 @@ for ipos, pos in enumerate(src_production):
     cp.cuda.runtime.deviceSynchronize()
     t0 = time.time()
 
-    #! PyQUDA: prepare the source-interpolator-dependent part of the contraction for TMDWF
-    G16_fw_interpolator_by_src = {}
-    for src_label in pt2_src:
-        interpolator = interpolator_by_src[src_label]
-        fw_interpolator = contract("wtzyxilab, lj -> wtzyxijab", propag_f.data, interpolator)
-        G16_fw_interpolator_by_src[src_label] = contract("gim, wtzyxmjab -> gwtzyxijab", pyquda_gamma_ls, fw_interpolator)
-        del fw_interpolator
 
 
     #! PyQUDA: contract TMD +X direction
@@ -249,16 +219,14 @@ for ipos, pos in enumerate(src_production):
 
         cp.cuda.runtime.deviceSynchronize()
         t0 = time.time()
-        temp0 = contract("ki, wtzyxklab, jl -> wtzyxjiba", G5, tmd_backward_prop_dir0.data.conj(), G5)
         for src_label in pt2_src:
-            temp1 = contract("wtzyxjiba, gwtzyxijab -> gwtzyx", temp0, G16_fw_interpolator_by_src[src_label])
-            temp2 = core.gatherLattice(contract("qwtzyx, gwtzyx -> qgt", phases_2pt, temp1).get(), [2, -1, -1, -1])
-            tmdwf_collect_by_src[src_label].append(temp2)
-            del temp1, temp2
-    
+            corr = contract_pion_2pt(latt_info, propag_f, tmd_backward_prop_dir0, phases_2pt, src_gamma=src_label)
+            if latt_info.mpi_rank == 0:
+                corr = np.transpose(corr, (1, 0, 2))
+            tmdwf_collect_by_src[src_label].append(corr)
+
         cp.cuda.runtime.deviceSynchronize()
         mpi_print(latt_info, f"TIME PyQUDA: contract TMDWF {time.time() - t0}")
-        del temp0
     del tmd_backward_prop_dir0
         
     #! PyQUDA: contract TMD +Y direction
@@ -279,48 +247,49 @@ for ipos, pos in enumerate(src_production):
 
         cp.cuda.runtime.deviceSynchronize()
         t0 = time.time()
-        temp0 = contract("ki, wtzyxklab, jl -> wtzyxjiba", G5, tmd_backward_prop_dir1.data.conj(), G5)
         for src_label in pt2_src:
-            temp1 = contract("wtzyxjiba, gwtzyxijab -> gwtzyx", temp0, G16_fw_interpolator_by_src[src_label])
-            temp2 = core.gatherLattice(contract("qwtzyx, gwtzyx -> qgt", phases_2pt, temp1).get(), [2, -1, -1, -1])
-            tmdwf_collect_by_src[src_label].append(temp2)
-            del temp1, temp2
-        
+            corr = contract_pion_2pt(latt_info, propag_f, tmd_backward_prop_dir1, phases_2pt, src_gamma=src_label)
+            if latt_info.mpi_rank == 0:
+                corr = np.transpose(corr, (1, 0, 2))
+            tmdwf_collect_by_src[src_label].append(corr)
+
         cp.cuda.runtime.deviceSynchronize()
         mpi_print(latt_info, f"TIME PyQUDA: contract TMDWF {time.time() - t0}")
-        del temp0
     del tmd_backward_prop_dir1
     
     for src_label in pt2_src:
         tmdwf_collect_by_src[src_label] = np.array(tmdwf_collect_by_src[src_label]) # shape (N_W, N_pz, N_gamma, N_t)
         mpi_print(latt_info, f"TIME contract_TMDWF: {source_tag(src_label)} shape {np.shape(tmdwf_collect_by_src[src_label])} {time.time()-t0_contract}s")
-    del G16_fw_interpolator_by_src
 
     #>>>>>>>>>>>>>>>>>>>>>>>>> Save correlators <<<<<<<<<<<<<<<<<<<<<<<<<<#
     cp.cuda.runtime.deviceSynchronize()
     t0 = time.time()
     # reorder gamma, and cut useful tau in [src_t, src_t+tsep+2)
     for src_label, TMDWF_collect in tmdwf_collect_by_src.items():
-        if latt_info.mpi_rank == 0:
-            TMDWF_collect = np.roll(TMDWF_collect, -pos[3], axis=-1)
-        TMDWF_collect = getMPIComm().bcast(TMDWF_collect, root=0)
-        #! parallel the io through gamma
-        tasks = list(range(len(gammalist)))
-        rank = latt_info.mpi_rank
-        size = getMPIComm().Get_size()
-        for gidx in tasks[rank::size]:
-            gm = gammalist[gidx]
-            qTMDWF_tag = get_qTMDWF_file_tag(data_dir, lat_tag, conf, "ex", pos, f"{sm_tag}.{source_tag(src_label)}.snk{gm}")
-            print(f"DEBUG: rank {rank}, {qTMDWF_tag}")
-            data = TMDWF_collect[:, :, gidx:gidx+1, :] #! shape (N_W, N_pz, gm, N_t)
-            save_qTMDWF_hdf5_noRoll(data, qTMDWF_tag, [gm], [[0, 0, p, 0] for p in range(parameters["pzmin"], parameters["pzmax"])], W_index_list_CG)
-        cp.cuda.runtime.deviceSynchronize()
+        if latt_info.mpi_rank != 0:
+            continue
+        TMDWF_collect = np.roll(TMDWF_collect, -pos[3], axis=-1)
+        qTMDWF_tag = get_qTMDWF_file_tag(data_dir, lat_tag, conf, "ex", pos, f"{sm_tag}.src{src_label}")
+        mpi_print(latt_info, f"Saving all qTMDWF gamma channels: {qTMDWF_tag}")
+        save_qTMDWF_hdf5_noRoll(
+            TMDWF_collect,
+            qTMDWF_tag,
+            gammalist,
+            [[0, 0, p, 0] for p in range(parameters["pzmin"], parameters["pzmax"])],
+            W_index_list_CG,
+            attrs={
+                "source_interpolator": src_label,
+                "spectator_boost": parameters["pos_boost"],
+                "active_boost": parameters["neg_boost"],
+            },
+        )
+    cp.cuda.runtime.deviceSynchronize()
     mpi_print(latt_info, f"TIME: save TMDs {time.time() - t0}")
     mpi_print(latt_info, "Contraction: Done TMDWF: CG no links")
     
 
-    with open(sample_log_file, "a+") as f:
-        if latt_info.mpi_rank == 0:
-            f.write(sample_log_tag+"\n")
+    if latt_info.mpi_rank == 0:
+        append_sample_log_entry(sample_log_file, sample_log_tag)
+    completed_samples.add(sample_log_tag)
 
     mpi_print(latt_info, f"DONE: {sample_log_tag}")
