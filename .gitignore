@@ -20,15 +20,7 @@ temp/
 *.npz
 *.log
 examples/glu/gauge_fixing/GLU
-configs/S16T16/
-configs/S16T16_*/
-configs/S8T32_cg/
-configs/S24T24/
-configs/S24T24_*/
-configs/S32T32/
-configs/S32T32_*/
-configs/*/wilson_b6.[5-9]
-configs/*/wilson_b6.[1-9][0-9]*
+configs
 
 build/
 dist/
