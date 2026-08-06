@@ -3,13 +3,17 @@
 # show current time
 start_time=$(date +%s)
 
-mkdir -p ../conf/S24T24_cg
+# Repository-root configs/ (local symlink to gauge ensembles)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONF_ROOT="${SCRIPT_DIR}/../../../configs"
+
+mkdir -p "${CONF_ROOT}/S24T24_cg"
 for n_conf in $(seq 0 49); do
     echo " "
     echo "Processing configuration ${n_conf}"
 
-    gauge_file=../conf/S24T24/wilson_b6.${n_conf}
-    gfixed_file=../conf/S24T24_cg/wilson_b6.cg.1e-14.${n_conf}
+    gauge_file=${CONF_ROOT}/S24T24/wilson_b6.${n_conf}
+    gfixed_file=${CONF_ROOT}/S24T24_cg/wilson_b6.cg.1e-14.${n_conf}
 
     config_start_time=$(date +%s)
     echo " "

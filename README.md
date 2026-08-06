@@ -19,42 +19,40 @@ Current focus:
   - `examples/pyquda/` PyQUDA runnable or draft driver scripts
   - `examples/glu/` GLU examples
 - `checks/consistency/` cross-software checks and comparison workflows
-- `configs/` gauge/configuration inputs
+- `configs/` gauge configuration inputs (local symlink; ignored by git). Point it at your ensembles tree, e.g. `ln -s /path/to/ensembles configs`.
 
 The repository package deliberately uses the `latcoding` namespace so it does not shadow upstream `gpt` or `pyquda` imports.
 
 ## Environment
 
-Python is managed with repository-root `.venv` (Python 3.8, pinned to match the prebuilt GPT/PyQUDA stack).
-
-The compiled stack (`pyquda`, `cupy`, `cgpt.so`, and `pyquda_plugins.pycontract`) is built for CPython 3.8 ABI, so `.venv` should be created from a Python 3.8 interpreter with system site-packages enabled to reuse those artifacts without rebuilding any non-Python software:
+Python is managed with repository-root `.venv` (Python 3.12), created from the local `qcd` conda env with system site-packages so PyQUDA/CuPy and related packages are reused without reinstalling the compiled stack:
 
 ```bash
-<python-3.8-interpreter> -m venv .venv --system-site-packages
+/home/jinchen/software/miniconda3/envs/qcd/bin/python -m venv .venv --system-site-packages
 ```
 
-`gpt` and `cgpt` are made importable via `.venv/lib/python3.8/site-packages/gpt.pth`, which mirrors `gpt/lib/cgpt/build/source.sh`.
+`pyquda` / `libquda` are built against OpenMPI (`/home/jinchen/software/openmpi`). The `qcd` conda env ships Intel MPI `mpi4py`, which conflicts with that stack, so `.venv` installs its own OpenMPI-backed `mpi4py` that shadows the conda one. When rebuilding `mpi4py`, temporarily hide conda `libmpi*` during the build so the extension links to `libmpi.so.40`.
 
-Non-Python software is reused from existing local installations. Set these paths for the machine you are running on:
-- `source <path-to-gpt-env>`
-- `export QUDA_PATH=<path-to-quda-build>`
+Optional GPT: if a local GPT tree is available, add a `.venv/lib/python3.12/site-packages/gpt.pth` pointing at that tree's `lib/` and `lib/cgpt/build/` (mirroring GPT's `source.sh`). GPT is not currently installed on this machine.
 
-The Python packages used by current scripts are provided by the system site-packages visible to `.venv`; do not reinstall GPT/PyQUDA/QUDA from this repository. The current environment expects:
+Do not reinstall PyQUDA/QUDA from this repository. Expected packages (mostly from `qcd` site-packages):
 
 - `numpy`
 - `scipy`
 - `h5py`
-- `mpi4py`
+- `mpi4py` (OpenMPI build inside `.venv`)
 - `opt_einsum`
 - `tqdm`
 - `matplotlib`
 - `gvar`
 - `pyyaml`
+- `cupy`
+- `pyquda` / `pyquda_utils`
 
 ## Quick start
 
-1. Activate `.venv` (`source .venv/bin/activate`); `pyquda`, `pyquda_utils`, `cupy`, `gpt`, and `cgpt` are already available.
-2. Install this repository package in editable mode: `.venv/bin/pip install -e .`
+1. Activate `.venv` (`source .venv/bin/activate`); `pyquda`, `pyquda_utils`, and `cupy` are available via system site-packages.
+2. Install this repository package in editable mode if needed: `.venv/bin/pip install -e .`
 3. Import reusable code through `latcoding`, for example:
 
 ```python

@@ -1,5 +1,15 @@
 # PROJECT_LOG.md
 
+## 2026-08-06
+
+- Removed `env.sh`; activate with `source .venv/bin/activate` only.
+- Restored repository-root `configs/` as a local symlink to machine ensembles (gitignored); code paths use `configs/` again instead of hardcoding host-specific absolute paths or `latcoding.common.ENSEMBLES_DIR`.
+- Recreated broken repository-root `.venv` (old interpreter symlink pointed at removed `/home/jinchen/miniconda3/envs/pygpt` Python 3.8).
+- New `.venv` is based on `/home/jinchen/software/miniconda3/envs/qcd` Python 3.12 with `--system-site-packages`, reusing PyQUDA 0.10.54 / CuPy / scientific stack from that env.
+- Installed OpenMPI-backed `mpi4py` into `.venv` to shadow conda Intel MPI `mpi4py`; without this, `import pyquda` aborted inside `PMPI_Init_thread` (OFI / ABI mismatch with `libquda.so` linked to OpenMPI).
+- Installed `latcoding` editable; verified imports for `numpy`, `scipy`, `h5py`, `mpi4py`, `cupy`, `pyquda`, `pyquda_utils`, `pyquda_plugins`, and `latcoding.pyquda.utils.boosted_smearing`.
+- Updated `README.md` environment notes for the Python 3.12 / `qcd` / OpenMPI setup; GPT/`cgpt` not present on this machine (previous `lat-software` path is gone).
+
 ## 2026-06-17
 
 - Updated `examples/pyquda/measurement/pion_2pt.py` to use repository-root `configs/`, repository-root `.cache/pyquda`, and script-anchored plot output paths.

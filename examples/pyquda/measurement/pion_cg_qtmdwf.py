@@ -2,6 +2,8 @@
 # load python modules
 import os
 import time
+from pathlib import Path
+
 import numpy as np
 import cupy as cp
 
@@ -30,9 +32,10 @@ conf = args.config_num
 mpi_geometry = [int(i) for i in args.mpi_geometry.split(".")]
 
 # Global parameters
-data_dir="/home/jinchen/git/lat-software/LatCoding/examples/artifacts/data" # NOTE
-lat_tag = "S16T16_cg" # NOTE
-sm_tag = "S16T16_tmdwf_debug_gz" # NOTE
+repo_root = Path(__file__).resolve().parents[3]
+data_dir = str(repo_root / "examples/artifacts/data")
+lat_tag = "S8T32_cg" # NOTE
+sm_tag = "S8T32_tmdwf_debug" # NOTE
 
 
 # --------------------------
@@ -71,8 +74,8 @@ n_src = 1 # number of sources
 # --------------------------
 
 ###################### load gauge ######################
-Ls = 16
-Lt = 16
+Ls = 8
+Lt = 32
 L = [Ls, Ls, Ls, Lt]
 xi_0, nu = 1.0, 1.0
 mass = -0.038888 # kappa = 0.12623
@@ -81,7 +84,7 @@ csw_t = 1.0336
 multigrid = None # [[8, 8, 4, 4]]
 latt_info = core.LatticeInfo([Ls, Ls, Ls, Lt], -1, xi_0 / nu)
 
-gauge = io.readNERSCGauge(f"/home/jinchen/git/lat-software/LatCoding/configs/S{Ls}T{Lt}_cg/wilson_b6.cg.1e-14.{conf}")
+gauge = io.readNERSCGauge(str(repo_root / f"configs/S{Ls}T{Lt}_cg/wilson_b6.cg.1e-14.{conf}"))
 gauge.hypSmear(1, 0.75, 0.6, 0.3, -1)
 
 mpi_print(latt_info, f"--lat_tag {lat_tag}")
