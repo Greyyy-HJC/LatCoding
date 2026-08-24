@@ -3,7 +3,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 import re
-from latcoding.pyquda.utils.fermion_bilinear_basis import GAMMA_LABELS, basis_attrs, basis_metadata
+from latcoding.pyquda.utils.fermion_bilinear_basis import basis_attrs, basis_metadata
 
 
 # -----------------------------------------------------------------------------
@@ -271,9 +271,22 @@ def save_emt_gluon_1pt_hdf5(tag, Tmunu_t, attrs=None):
 # Two-point and qTMD HDF5 writers
 # -----------------------------------------------------------------------------
 
-# Save the standard two-point function with source-time rolling.
-def save_c2pt_hdf5(corr, tag, gammalist, plist, attrs=None):
+_BTDIR_AXES = ("X", "Y")
 
+
+def _momentum_tag(p):
+    return "PX" + str(p[0]) + "PY" + str(p[1]) + "PZ" + str(p[2])
+
+
+def _bTdir_tag(tdir):
+    return "bTdir" + _BTDIR_AXES[int(tdir)]
+
+
+def _nonlocal_tag(gamma):
+    return str(gamma) + "_nonlocal"
+
+
+def _c2pt_source_roll(tag):
     src_match = None
     for part in tag.split("."):
         src_match = re.search(r"^x-?\d+y-?\d+z-?\d+t(-?\d+)$", part)
@@ -281,31 +294,120 @@ def save_c2pt_hdf5(corr, tag, gammalist, plist, attrs=None):
             break
     if src_match is None:
         raise ValueError(f"Could not parse source time from c2pt tag: {tag}")
-    roll = -int(src_match.group(1))
+    return -int(src_match.group(1))
+
+
+def save_c2pt_hdf5(corr, tag, gammalist, plist, attrs=None):
+    """Save 2pt as {src}/{snk}/{PXnPYnPZn} with shape (Lt,)."""
+    roll = _c2pt_source_roll(tag)
+    src_gamma = None
+    if attrs:
+        src_gamma = attrs.get("source_interpolator")
+    if not src_gamma:
+        raise ValueError("save_c2pt_hdf5 requires attrs['source_interpolator']")
+
     file_attrs = {
         **basis_attrs(),
-        "c2pt_hdf5_schema": "pion_c2pt_hierarchical_v1",
-        "corr_axes": "gamma,momentum,time",
-        "momentum_columns": "px,py,pz,energy",
+        "c2pt_hdf5_schema": "pion_c2pt_groups_v2",
+        "corr_axes": "time",
         "time_axis": "source_relative",
+        "momentum_columns": "px,py,pz,energy",
     }
     if attrs:
         file_attrs.update(attrs)
 
     save_h5 = tag + ".h5"
-    f = _prepare_h5_file(save_h5, file_attrs)
-    f.create_dataset("momentum_list", data=np.asarray(plist, dtype=np.int32))
-    for name, values in basis_metadata().items():
-        f.create_dataset(name, data=values)
+    with _prepare_h5_file(save_h5, file_attrs) as f:
+        meta = f.create_group("_meta")
+        meta.create_dataset("momentum_list", data=np.asarray(plist, dtype=np.int32))
+        for name, values in basis_metadata().items():
+            meta.create_dataset(name, data=values)
 
-    sm = f.create_group("SS")
-    for ig, gm in enumerate(gammalist):
-        g = sm.create_group(gm)
+        g_src = f.require_group(str(src_gamma))
+        for ig, gm in enumerate(gammalist):
+            g_snk = g_src.require_group(gm)
+            for ip, p in enumerate(plist):
+                data = np.asarray(np.roll(corr[ig][ip], roll, axis=0), dtype=np.complex128)
+                g_snk.create_dataset(_momentum_tag(p), data=data)
+
+
+def save_qTMD_pion_hdf5_noRoll(
+    corr,
+    tag,
+    gammalist,
+    plist,
+    W_index_list,
+    tsep,
+    latt_info=None,
+    attrs=None,
+):
+    """Save 3pt as {src}/{snk}/{PXnPYnPZn}/tsep{tsep}/eta{eta}/bT{bT}/bz{bz}/bTdir{X|Y}/{current}.
+
+    ``corr`` is already source-relative with shape [wilson, momentum, gamma, tsep+1].
+    Source and sink interpolators are local; the Wilson-line insertion is ``{current}``.
+    ``bTdirX`` / ``bTdirY`` is the transverse direction of the displacement.
+    """
+    tsep = int(tsep)
+    src_gamma = attrs.get("source_interpolator") if attrs else None
+    snk_gamma = attrs.get("sink_interpolator") if attrs else None
+    if not src_gamma or not snk_gamma:
+        raise ValueError(
+            "save_qTMD_pion_hdf5_noRoll requires attrs['source_interpolator'] "
+            "and attrs['sink_interpolator']"
+        )
+
+    corr = np.asarray(corr)
+    expected_time = tsep + 1
+    if corr.ndim != 4 or corr.shape[-1] != expected_time:
+        raise ValueError(
+            f"qTMD corr should have time axis tsep+1={expected_time}, got shape {corr.shape}"
+        )
+    if corr.shape[0] != len(W_index_list):
+        raise ValueError("corr wilson axis does not match W_index_list")
+    if corr.shape[1] != len(plist):
+        raise ValueError("corr momentum axis does not match plist")
+    if corr.shape[2] != len(gammalist):
+        raise ValueError("corr gamma axis does not match gammalist")
+
+    file_attrs = {
+        **basis_attrs(),
+        "qtmd_hdf5_schema": "pion_qtmd_groups_v3",
+        "corr_axes": "time",
+        "time_axis": "source_relative",
+        "t_separation": tsep,
+        "momentum_columns": "px,py,pz,energy",
+        "wilson_index_columns": "bT,bz,eta,bTdir",
+        "bTdir_labels": "bTdirX,bTdirY",
+        "source_role": "local interpolator",
+        "sink_role": "local interpolator",
+        "insertion_role": "nonlocal current",
+    }
+    if attrs:
+        file_attrs.update(attrs)
+
+    save_h5 = tag + ".h5"
+    with _prepare_h5_file(save_h5, file_attrs) as f:
+        meta = f.create_group("_meta")
+        meta.create_dataset("momentum_list", data=np.asarray(plist, dtype=np.int32))
+        meta.create_dataset("wilson_index_list", data=np.asarray(W_index_list, dtype=np.int32))
+        for name, values in basis_metadata().items():
+            meta.create_dataset(name, data=values)
+
+        g_src = f.require_group(str(src_gamma))
+        g_snk = g_src.require_group(str(snk_gamma))
+        tsep_tag = "tsep" + str(tsep)
         for ip, p in enumerate(plist):
-            dataset_tag = "PX"+str(p[0])+"PY"+str(p[1])+"PZ"+str(p[2])
-            #print('DEBUG:', np.shape(corr), np.shape(gammalist), ig, ip)
-            g.create_dataset(dataset_tag, data=np.roll(corr[ig][ip], roll, axis=0))
-    f.close()
+            g_mom = g_snk.require_group(_momentum_tag(p)).require_group(tsep_tag)
+            for i, idx in enumerate(W_index_list):
+                b_T, b_z, eta, tdir = idx
+                g_leaf = (
+                    g_mom.require_group("eta" + str(eta))
+                    .require_group("bT" + str(b_T))
+                    .require_group("bz" + str(b_z))
+                    .require_group(_bTdir_tag(tdir))
+                )
+                for ig, gm in enumerate(gammalist):
+                    g_leaf.create_dataset(gm, data=np.asarray(corr[i, ip, ig], dtype=np.complex128))
 
 
 # W_index_list[bT, bz, eta, Tdir]
@@ -334,54 +436,6 @@ def save_qTMD_proton_hdf5_noRoll(corr, tag, gammalist, plist, W_index_list, tsep
                 g_data = g_p.require_group(path)
                 g_data.create_dataset('bz'+str(idx[1]), data=corr[i][ip][ig][:tsep+2])
     f.close()
-
-
-# Save pion qTMD/PDF data using the same HDF5 layout as the proton writer.
-def save_connected_qtmd_hdf5(corr, tag, momentum_list, wilson_index_list, t_sep, attrs=None):
-    """Save one connected qTMD operator with dense, self-describing axes."""
-    corr = np.asarray(corr)
-    momentum_list = np.asarray(momentum_list, dtype=np.int32)
-    wilson_index_list = np.asarray(wilson_index_list, dtype=np.int32)
-    t_sep = int(t_sep)
-    expected_shape = (
-        len(wilson_index_list),
-        len(momentum_list),
-        len(GAMMA_LABELS),
-        t_sep + 2,
-    )
-    if corr.shape != expected_shape:
-        raise ValueError(
-            f"connected qTMD corr should have [wilson,momentum,gamma,time]={expected_shape}, got {corr.shape}"
-        )
-    if momentum_list.ndim != 2 or momentum_list.shape[1] != 4:
-        raise ValueError("momentum_list should have shape [N_momentum,4]")
-    if wilson_index_list.ndim != 2 or wilson_index_list.shape[1] != 4:
-        raise ValueError("wilson_index_list should have shape [N_wilson,4]")
-
-    file_attrs = {
-        **basis_attrs(),
-        "qtmd_hdf5_schema": "connected_qtmd_dense_v1",
-        "corr_axes": "wilson,momentum,gamma,time",
-        "momentum_columns": "px,py,pz,energy",
-        "wilson_index_columns": "bT,bz,eta,transverse_direction",
-        "time_axis": "source_relative",
-        "t_separation": t_sep,
-    }
-    if attrs:
-        file_attrs.update(attrs)
-
-    with _prepare_h5_file(f"{tag}.h5", file_attrs) as f:
-        f.create_dataset("corr", data=corr)
-        f.create_dataset("momentum_list", data=momentum_list)
-        f.create_dataset("wilson_index_list", data=wilson_index_list)
-        for name, values in basis_metadata().items():
-            f.create_dataset(name, data=values)
-
-
-def save_qTMD_pion_hdf5_noRoll(corr, tag, gammalist, plist, W_index_list, tsep, latt_info, attrs=None):
-    if tuple(gammalist) != GAMMA_LABELS:
-        raise ValueError("pion qTMD writer requires the complete canonical 16-gamma basis")
-    return save_connected_qtmd_hdf5(corr, tag, plist, W_index_list, tsep, attrs=attrs)
 
 
 # Save disconnected qTMD/PDF one-point loops.
@@ -506,48 +560,60 @@ def save_pion_soft_factor_c2pt_hdf5_noRoll(corr, tag, src_key, sink_keys, moment
 # qTMDWF HDF5 writers
 # -----------------------------------------------------------------------------
 
-# Save the standard qTMDWF output after the application has already rolled time.
 def save_qTMDWF_hdf5_noRoll(corr, tag, gammalist, plist, W_index_list, attrs=None):
+    """Save qTMDWF as {src}/{gamma}_nonlocal/{PXnPYnPZn}/eta{eta}/bT{bT}/bz{bz}/bTdir{X|Y}.
 
-    bT_list = ['b_X', 'b_Y']
+    ``corr`` is already source-relative with shape [wilson, momentum, gamma, Lt].
+    ``src`` is the local interpolator. ``{gamma}_nonlocal`` is the nonlocal sink
+    operator (Wilson line on the backward line). ``bTdirX`` / ``bTdirY`` is the
+    transverse displacement direction.
+    """
+    src_gamma = attrs.get("source_interpolator") if attrs else None
+    if not src_gamma:
+        raise ValueError("save_qTMDWF_hdf5_noRoll requires attrs['source_interpolator']")
+
     corr = np.asarray(corr)
-    plist = np.asarray(plist, dtype=np.int32)
-    W_index_list = np.asarray(W_index_list, dtype=np.int32)
-    expected_shape = (len(W_index_list), len(plist), len(gammalist), corr.shape[-1])
-
-    if corr.shape != expected_shape:
-        raise ValueError(f"qTMDWF corr should have [wilson,momentum,gamma,time]={expected_shape}, got {corr.shape}")
-    if tuple(gammalist) != GAMMA_LABELS:
-        raise ValueError("qTMDWF writer requires the complete canonical 16-gamma basis")
+    if corr.ndim != 4:
+        raise ValueError(f"qTMDWF corr should have [wilson,momentum,gamma,time], got {corr.shape}")
+    if corr.shape[0] != len(W_index_list):
+        raise ValueError("corr wilson axis does not match W_index_list")
+    if corr.shape[1] != len(plist):
+        raise ValueError("corr momentum axis does not match plist")
+    if corr.shape[2] != len(gammalist):
+        raise ValueError("corr gamma axis does not match gammalist")
 
     file_attrs = {
         **basis_attrs(),
-        "qtmdwf_hdf5_schema": "qtmdwf_hierarchical_v1",
-        "corr_axes": "wilson,momentum,gamma,time",
-        "momentum_columns": "px,py,pz,energy",
-        "wilson_index_columns": "bT,bz,eta,transverse_direction",
+        "qtmdwf_hdf5_schema": "pion_qtmdwf_groups_v3",
+        "corr_axes": "time",
         "time_axis": "source_relative",
+        "momentum_columns": "px,py,pz,energy",
+        "wilson_index_columns": "bT,bz,eta,bTdir",
+        "bTdir_labels": "bTdirX,bTdirY",
+        "source_role": "local interpolator",
+        "sink_role": "nonlocal operator",
     }
     if attrs:
         file_attrs.update(attrs)
 
-
     save_h5 = tag + ".h5"
-    f = _prepare_h5_file(save_h5, file_attrs)
+    with _prepare_h5_file(save_h5, file_attrs) as f:
+        meta = f.create_group("_meta")
+        meta.create_dataset("momentum_list", data=np.asarray(plist, dtype=np.int32))
+        meta.create_dataset("wilson_index_list", data=np.asarray(W_index_list, dtype=np.int32))
+        for name, values in basis_metadata().items():
+            meta.create_dataset(name, data=values)
 
-    sm = f.require_group("SP")
-    f.create_dataset("momentum_list", data=plist)
-    f.create_dataset("wilson_index_list", data=W_index_list)
-    for name, values in basis_metadata().items():
-        f.create_dataset(name, data=values)
-
-    for ig, gm in enumerate(gammalist):
-        g_gm = sm.require_group(gm)
-        for ip, p in enumerate(plist):
-            p_tag = "PX"+str(p[0])+"PY"+str(p[1])+"PZ"+str(p[2])
-            g_p = g_gm.require_group(p_tag)
-            for i, idx in enumerate(W_index_list):
-                path = bT_list[idx[3]] + '/' + 'eta'+str(idx[2]) + '/' + 'bT'+str(idx[0])
-                g_data = g_p.require_group(path)
-                g_data.create_dataset('bz'+str(idx[1]), data=corr[i][ip][ig])
-    f.close()
+        g_src = f.require_group(str(src_gamma))
+        for ig, gm in enumerate(gammalist):
+            g_nl = g_src.require_group(_nonlocal_tag(gm))
+            for ip, p in enumerate(plist):
+                g_mom = g_nl.require_group(_momentum_tag(p))
+                for i, idx in enumerate(W_index_list):
+                    b_T, b_z, eta, tdir = idx
+                    g_mom.require_group("eta" + str(int(eta))).require_group(
+                        "bT" + str(int(b_T))
+                    ).require_group("bz" + str(int(b_z))).create_dataset(
+                        _bTdir_tag(tdir),
+                        data=np.asarray(corr[i, ip, ig], dtype=np.complex128),
+                    )

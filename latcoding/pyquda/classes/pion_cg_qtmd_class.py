@@ -95,8 +95,8 @@ without explicit gauge links:
 
     O_b S_q(x, x0) = S_q(x + bT * e_perp + bz * ez, x0).
 
-The transverse direction is scanned over x and y, stored as ``b_X`` and
-``b_Y`` in the HDF5 output.  The code contracts both directions separately so
+The transverse direction is scanned over x and y, stored as ``bTdirX`` and
+``bTdirY`` in the HDF5 output.  The code contracts both directions separately so
 successive shifts stay small.
 
 PDF operators

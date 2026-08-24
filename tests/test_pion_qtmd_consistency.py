@@ -9,7 +9,7 @@ from latcoding.pyquda.utils.fermion_bilinear_basis import (
     PYQUDA_GAMMA_IDS,
 )
 from latcoding.pyquda.utils.io_corr import (
-    save_connected_qtmd_hdf5,
+    save_qTMD_pion_hdf5_noRoll,
     save_qTMDWF_hdf5_noRoll,
 )
 from latcoding.pyquda.utils.tools import append_sample_log_entry, read_sample_log_entries
@@ -35,42 +35,52 @@ def test_canonical_gamma_basis_metadata():
     assert PHYSICAL_FROM_PYQUDA[GAMMA_LABELS.index("T5"), GAMMA_LABELS.index("T5")] == -1
 
 
-def test_connected_qtmd_dense_schema(tmp_path):
+def test_connected_qtmd_grouped_schema(tmp_path):
     tag = tmp_path / "pion"
     momentum = [[0, 0, 0, 0], [0, 0, 1, 0]]
-    wilson = [[0, 0, 0, 0], [0, 1, 0, 0]]
-    corr = np.arange(2 * 2 * 16 * 6).reshape(2, 2, 16, 6)
-    save_connected_qtmd_hdf5(
+    wilson = [[0, 0, 0, 0], [0, 1, 0, 1]]
+    tsep = 4
+    corr = np.arange(2 * 2 * 16 * (tsep + 1), dtype=np.complex128).reshape(2, 2, 16, tsep + 1)
+    save_qTMD_pion_hdf5_noRoll(
         corr,
         str(tag),
+        list(GAMMA_LABELS),
         momentum,
         wilson,
-        4,
-        attrs={"active_boost": [0, 0, -3]},
+        tsep,
+        attrs={"source_interpolator": "T5", "sink_interpolator": "T5", "active_boost": [0, 0, -3]},
     )
 
     with h5py.File(f"{tag}.h5", "r") as h5_file:
-        assert h5_file.attrs["qtmd_hdf5_schema"] == "connected_qtmd_dense_v1"
-        assert h5_file.attrs["corr_axes"] == "wilson,momentum,gamma,time"
-        np.testing.assert_array_equal(h5_file["corr"], corr)
-        np.testing.assert_array_equal(h5_file["momentum_list"], momentum)
-        np.testing.assert_array_equal(h5_file["wilson_index_list"], wilson)
-        assert [value.decode() for value in h5_file["gamma_list"][:]] == list(GAMMA_LABELS)
+        assert h5_file.attrs["qtmd_hdf5_schema"] == "pion_qtmd_groups_v3"
+        path = "T5/T5/PX0PY0PZ1/tsep4/eta0/bT0/bz1/bTdirY/T"
+        np.testing.assert_array_equal(h5_file[path], corr[1, 1, list(GAMMA_LABELS).index("T")])
+        assert [value.decode() for value in h5_file["_meta/gamma_list"][:]] == list(GAMMA_LABELS)
 
 
-def test_qtmdwf_one_file_contains_all_gamma_groups(tmp_path):
+def test_qtmdwf_grouped_schema(tmp_path):
     tag = tmp_path / "wavefunction"
-    momentum = [[0, 0, 0, 0]]
-    wilson = [[0, 0, 0, 0]]
-    corr = np.arange(16 * 5).reshape(1, 1, 16, 5)
-    save_qTMDWF_hdf5_noRoll(corr, str(tag), list(GAMMA_LABELS), momentum, wilson)
+    momentum = [[0, 0, 1, 0]]
+    wilson = [[0, 0, 0, 0], [1, -2, 0, 1]]
+    corr = np.arange(2 * 1 * 16 * 5, dtype=np.complex128).reshape(2, 1, 16, 5)
+    save_qTMDWF_hdf5_noRoll(
+        corr,
+        str(tag),
+        list(GAMMA_LABELS),
+        momentum,
+        wilson,
+        attrs={"source_interpolator": "T5"},
+    )
 
     with h5py.File(f"{tag}.h5", "r") as h5_file:
-        assert h5_file.attrs["qtmdwf_hdf5_schema"] == "qtmdwf_hierarchical_v1"
-        assert set(h5_file["SP"]) == set(GAMMA_LABELS)
-        for gamma_idx, gamma_label in enumerate(GAMMA_LABELS):
-            dataset = h5_file[f"SP/{gamma_label}/PX0PY0PZ0/b_X/eta0/bT0/bz0"]
-            np.testing.assert_array_equal(dataset, corr[0, 0, gamma_idx])
+        assert h5_file.attrs["qtmdwf_hdf5_schema"] == "pion_qtmdwf_groups_v3"
+        assert h5_file.attrs["source_role"] == "local interpolator"
+        assert h5_file.attrs["sink_role"] == "nonlocal operator"
+        path = "T5/T_nonlocal/PX0PY0PZ1/eta0/bT1/bz-2/bTdirY"
+        np.testing.assert_array_equal(
+            h5_file[path], corr[1, 0, list(GAMMA_LABELS).index("T")]
+        )
+        assert [value.decode() for value in h5_file["_meta/gamma_list"][:]] == list(GAMMA_LABELS)
 
 
 def test_pion_runner_routes_spectator_and_active_boost_lines():

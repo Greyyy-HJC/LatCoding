@@ -1,5 +1,5 @@
 # %%
-"""Read src5/snk5 2pt and a selected Gamma from all-channel qTMDWF files."""
+"""Read src5 2pt and a selected nonlocal operator from all-channel qTMDWF files."""
 
 import re
 from pathlib import Path
@@ -18,7 +18,7 @@ from lametlat.ground_state.qda_fit import qda_two_state_joint_fit
 Ls = 16
 Lt = 16
 sm_tag = "S16T16_tmdwf_debug_gz"
-sink_gamma = "T5"
+nl_gamma = "T5"
 
 data_dir = Path(__file__).resolve().parents[2] / "artifacts" / "data"
 z_values = np.arange(-8, 9)
@@ -47,12 +47,12 @@ qtmdwf_data = []
 
 for config_num in configs:
     with h5py.File(c2pt_files[config_num], "r") as h5_file:
-        c2pt_data.append(h5_file["SS/5/PX0PY0PZ6"][:])
+        c2pt_data.append(h5_file["5/5/PX0PY0PZ6"][:])
 
     qtmdwf_z_data = []
     with h5py.File(qtmdwf_files[config_num], "r") as h5_file:
         for z in z_values:
-            dataset = f"SP/{sink_gamma}/PX0PY0PZ6/b_X/eta0/bT0/bz{z}"
+            dataset = f"5/{nl_gamma}_nonlocal/PX0PY0PZ6/eta0/bT0/bz{z}/bTdirX"
             qtmdwf_z_data.append(h5_file[dataset][:])
     qtmdwf_data.append(qtmdwf_z_data)
 

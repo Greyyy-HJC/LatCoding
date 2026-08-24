@@ -1,5 +1,10 @@
 # PROJECT_LOG.md
 
+## 2026-08-24
+
+- Pion grouped HDF5 keys: transverse direction is `bTdirX`/`bTdirY` (was `bX`/`bY`).
+- qTMDWF path is `{src}/{gamma}_nonlocal/{PXnPYnPZn}/eta/bT/bz/bTdir{X|Y}`; `{gamma}_nonlocal` is the nonlocal sink operator, `src` is the local interpolator.
+
 ## 2026-08-06
 
 - Removed `env.sh`; activate with `source .venv/bin/activate` only.

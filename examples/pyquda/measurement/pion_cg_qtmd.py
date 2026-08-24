@@ -111,7 +111,7 @@ def sync_backend_array(arr):
 def prepare_three_point(corr, pos, latt_info):
     if latt_info.mpi_rank == 0:
         corr = np.roll(corr, -pos[3], axis=-1)
-        corr = corr[:, :, :, : parameters["t_insert"] + 2]
+        corr = corr[:, :, :, : parameters["t_insert"] + 1]
         corr = np.transpose(corr, (0, 2, 1, 3))
     return getMPIComm().bcast(corr, root=0)
 
@@ -130,7 +130,7 @@ def save_three_point(corr, pos, correlator_tag, momenta, wilson_indices, latt_in
         pos,
         f"{sm_tag}.src{pt3_src}.snk{pt3_snk}.{pf_tag}",
     )
-    mpi_print(latt_info, f"Saving dense {correlator_tag} qTMD: {tag}")
+    mpi_print(latt_info, f"Saving {correlator_tag} qTMD: {tag}")
     attrs = {
         "source_interpolator": pt3_src,
         "sink_interpolator": pt3_snk,
